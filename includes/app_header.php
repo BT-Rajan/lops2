@@ -73,11 +73,12 @@ $nav_items = [
   <div class="main">
     <header class="topbar">
       <button class="icon-btn menu-toggle" data-menu-toggle aria-label="Menu"><?= icon('menu') ?></button>
-      <div class="search-pill">
+      <form class="search-pill" action="<?= base_url('cases.php') ?>" method="get" autocomplete="off" data-search-form>
         <?= icon('search') ?>
-        <input data-global-search style="border:none;outline:none;background:transparent;font:inherit;color:inherit;width:100%" type="text" placeholder="Search cases, clients, tasks…">
+        <input data-global-search name="q" style="border:none;outline:none;background:transparent;font:inherit;color:inherit;width:100%" type="text" placeholder="Search cases, clients, tasks…" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
         <kbd>/</kbd>
-      </div>
+        <div class="search-dropdown" data-search-dropdown></div>
+      </form>
       <div class="topbar-actions">
         <button class="icon-btn" data-theme-toggle aria-label="Toggle theme"><?= icon('sun') ?></button>
         <button class="icon-btn" aria-label="Notifications"><?= icon('bell') ?></button>
