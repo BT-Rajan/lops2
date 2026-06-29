@@ -15,7 +15,7 @@ $nav_items = [
     'clients'   => ['label' => 'Clients',   'icon' => 'clients',   'href' => 'clients.php'],
     'tasks'     => ['label' => 'Tasks',     'icon' => 'tasks',     'href' => 'modules.php?m=tasks', 'soon' => true],
     'calendar'  => ['label' => 'Calendar',  'icon' => 'calendar',  'href' => 'modules.php?m=calendar', 'soon' => true],
-    'documents' => ['label' => 'Documents', 'icon' => 'documents', 'href' => 'modules.php?m=documents', 'soon' => true],
+    'documents' => ['label' => 'Documents', 'icon' => 'documents', 'href' => 'documents.php'],
     'billing'   => ['label' => 'Billing',   'icon' => 'billing',   'href' => 'billing.php'],
 ];
 ?>

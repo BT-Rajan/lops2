@@ -78,7 +78,7 @@ require __DIR__ . '/includes/app_header.php';
       </thead>
       <tbody>
         <?php foreach ($recentCases as $c): ?>
-        <tr>
+        <tr style="cursor:pointer" onclick="window.location='<?= base_url('case-view.php?id=' . (int)$c['id']) ?>'">
           <td>
             <div class="case-title"><?= htmlspecialchars($c['title']) ?></div>
             <div class="case-number"><?= htmlspecialchars($c['case_number']) ?></div>
@@ -103,7 +103,7 @@ require __DIR__ . '/includes/app_header.php';
         <a class="link" href="<?= base_url('modules.php?m=tasks') ?>">View all →</a>
       </div>
       <?php if ($upcomingTasks): foreach ($upcomingTasks as $t): ?>
-        <div class="task-row <?= $t['status'] === 'done' ? 'done' : '' ?>">
+        <div class="task-row <?= $t['status'] === 'done' ? 'done' : '' ?>" <?= $t['case_id'] ? 'style="cursor:pointer" onclick="window.location=\'' . base_url('case-view.php?id=' . (int)$t['case_id']) . '\'"' : '' ?>>
           <span class="task-check"><?= $t['status'] === 'done' ? icon('check') : '' ?></span>
           <div>
             <div class="task-title"><?= htmlspecialchars($t['title']) ?></div>
