@@ -16,7 +16,7 @@ $nav_items = [
     'tasks'     => ['label' => 'Tasks',     'icon' => 'tasks',     'href' => 'modules.php?m=tasks', 'soon' => true],
     'calendar'  => ['label' => 'Calendar',  'icon' => 'calendar',  'href' => 'modules.php?m=calendar', 'soon' => true],
     'documents' => ['label' => 'Documents', 'icon' => 'documents', 'href' => 'modules.php?m=documents', 'soon' => true],
-    'billing'   => ['label' => 'Billing',   'icon' => 'billing',   'href' => 'modules.php?m=billing', 'soon' => true],
+    'billing'   => ['label' => 'Billing',   'icon' => 'billing',   'href' => 'billing.php'],
 ];
 ?>
 <!DOCTYPE html>

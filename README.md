@@ -11,10 +11,14 @@ on plain PHP + MySQL and [PHPAuth](https://github.com/PHPAuth/PHPAuth)
 3. Open phpMyAdmin → create a database called `legalops` → **Import** →
    select `sql/legalops.sql`. This creates every table (PHPAuth's tables
    plus the app's `legalops_*` tables) and seeds a demo login + sample
-   cases/tasks/activity.
+   cases/tasks/activity/billing entities/invoice.
 4. If your DB user/password or folder name differ from the defaults,
    edit `config/config.php`.
-5. Visit `http://localhost/legalops`.
+5. **Invoicing (Billing module):** run `composer install` in the
+   `legalops` folder to pull in `dompdf/dompdf`, the one dependency the
+   invoice PDF renderer needs. The rest of the app stays plain PHP — see
+   [`INVOICING.md`](INVOICING.md) for the full setup and how it's wired.
+6. Visit `http://localhost/legalops`.
 
 **Demo login:** `demo@legalops.local` / `LegalOps@123`
 
@@ -34,6 +38,7 @@ on plain PHP + MySQL and [PHPAuth](https://github.com/PHPAuth/PHPAuth)
 - Profile fields (`full_name`, `job_title`, `avatar_color`) live as extra
   columns on `phpauth_users`, since PHPAuth's `addUser()`/`updateUser()`
   write straight into named columns on that table.
-- Clients / Tasks / Calendar / Documents / Billing in the sidebar are
-  placeholder pages (`modules.php`) — only Dashboard and Cases are fully
-  wired up. Say the word and any of those can be built out next.
+- Clients / Tasks / Calendar / Documents in the sidebar are placeholder
+  pages (`modules.php`) — Dashboard, Cases, and Billing (invoicing for
+  India + GCC — see `INVOICING.md`) are fully wired up. Say the word and
+  any of the remaining placeholders can be built out next.

@@ -7,7 +7,6 @@ $modules = [
     'tasks'     => ['label' => 'Tasks',     'icon' => 'tasks',     'blurb' => 'Firm-wide task board with assignments, due dates and reminders.'],
     'calendar'  => ['label' => 'Calendar',  'icon' => 'calendar',  'blurb' => 'Hearings, filings and deadlines on a shared firm calendar.'],
     'documents' => ['label' => 'Documents', 'icon' => 'documents', 'blurb' => 'Versioned document storage tied to each matter.'],
-    'billing'   => ['label' => 'Billing',   'icon' => 'billing',   'blurb' => 'Time entries, invoices and retainers per client.'],
 ];
 
 $key = $_GET['m'] ?? 'clients';
