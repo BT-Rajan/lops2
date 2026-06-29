@@ -12,7 +12,7 @@ $theme = ($_COOKIE['legalops_theme'] ?? 'light') === 'dark' ? 'dark' : 'light';
 $nav_items = [
     'dashboard' => ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => 'dashboard.php'],
     'cases'     => ['label' => 'Cases',     'icon' => 'cases',     'href' => 'cases.php'],
-    'clients'   => ['label' => 'Clients',   'icon' => 'clients',   'href' => 'modules.php?m=clients', 'soon' => true],
+    'clients'   => ['label' => 'Clients',   'icon' => 'clients',   'href' => 'clients.php'],
     'tasks'     => ['label' => 'Tasks',     'icon' => 'tasks',     'href' => 'modules.php?m=tasks', 'soon' => true],
     'calendar'  => ['label' => 'Calendar',  'icon' => 'calendar',  'href' => 'modules.php?m=calendar', 'soon' => true],
     'documents' => ['label' => 'Documents', 'icon' => 'documents', 'href' => 'modules.php?m=documents', 'soon' => true],

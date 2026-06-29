@@ -129,3 +129,54 @@ function time_ago(string $datetime): string
     if ($diff < 604800) return floor($diff / 86400) . 'd ago';
     return date('d M Y', strtotime($datetime));
 }
+
+/**
+ * Validate and store an uploaded client document. Files are saved under
+ * UPLOAD_DIR/{client_id}/ with a random name — never the original
+ * filename — and the folder is denied to direct web access via
+ * uploads/.htaccess, so the only way to retrieve a file is through
+ * download.php after an auth + ownership check.
+ *
+ * @return array{ok: bool, message: string, id?: int}
+ */
+function handle_client_upload(PDO $pdo, int $clientId, ?int $leadershipId, string $docType, array $file, int $uploadedBy): array
+{
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        return ['ok' => false, 'message' => 'Choose a file to upload.'];
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return ['ok' => false, 'message' => 'Upload failed (error code ' . $file['error'] . ').'];
+    }
+    if ($file['size'] > UPLOAD_MAX_BYTES) {
+        return ['ok' => false, 'message' => 'File is larger than the 5MB limit.'];
+    }
+
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, UPLOAD_ALLOWED_EXT, true)) {
+        return ['ok' => false, 'message' => 'That file type isn\'t allowed. Use PDF, JPG, PNG, DOC or DOCX.'];
+    }
+
+    $clientDir = rtrim(UPLOAD_DIR, '/') . '/' . $clientId;
+    if (!is_dir($clientDir) && !mkdir($clientDir, 0755, true) && !is_dir($clientDir)) {
+        return ['ok' => false, 'message' => 'Could not create the upload folder on the server.'];
+    }
+
+    $storedName = bin2hex(random_bytes(16)) . '.' . $ext;
+    $destination = $clientDir . '/' . $storedName;
+
+    if (!move_uploaded_file($file['tmp_name'], $destination)) {
+        return ['ok' => false, 'message' => 'Could not save the uploaded file.'];
+    }
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO legalops_client_documents
+         (client_id, leadership_id, doc_type, stored_name, original_name, mime_type, file_size, uploaded_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    $stmt->execute([
+        $clientId, $leadershipId, $docType, $storedName,
+        basename($file['name']), $file['type'] ?? null, $file['size'], $uploadedBy,
+    ]);
+
+    return ['ok' => true, 'message' => 'Document uploaded.', 'id' => (int)$pdo->lastInsertId()];
+}

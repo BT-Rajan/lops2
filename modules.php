@@ -3,16 +3,15 @@ require_once __DIR__ . '/config/bootstrap.php';
 $current_user = require_login($auth);
 
 $modules = [
-    'clients'   => ['label' => 'Clients',   'icon' => 'clients',   'blurb' => 'A full client directory — contact details, matters, and billing history in one place.'],
     'tasks'     => ['label' => 'Tasks',     'icon' => 'tasks',     'blurb' => 'Firm-wide task board with assignments, due dates and reminders.'],
     'calendar'  => ['label' => 'Calendar',  'icon' => 'calendar',  'blurb' => 'Hearings, filings and deadlines on a shared firm calendar.'],
     'documents' => ['label' => 'Documents', 'icon' => 'documents', 'blurb' => 'Versioned document storage tied to each matter.'],
     'billing'   => ['label' => 'Billing',   'icon' => 'billing',   'blurb' => 'Time entries, invoices and retainers per client.'],
 ];
 
-$key = $_GET['m'] ?? 'clients';
+$key = $_GET['m'] ?? 'tasks';
 if (!isset($modules[$key])) {
-    $key = 'clients';
+    $key = 'tasks';
 }
 $m = $modules[$key];
 

@@ -170,10 +170,107 @@ DROP TABLE IF EXISTS `legalops_activity`;
 CREATE TABLE `legalops_activity` (
   `id` int NOT NULL AUTO_INCREMENT,
   `uid` int DEFAULT NULL,
+  `client_id` int DEFAULT NULL,
   `action` varchar(60) NOT NULL,
   `description` varchar(255) NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `client_id` (`client_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- Clients module: onboarding, KYC, leadership (with change history),
+-- secondary contacts, and uploaded documents.
+-- ---------------------------------------------------------------------
+
+DROP TABLE IF EXISTS `legalops_clients`;
+CREATE TABLE `legalops_clients` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `entity_type` enum('individual','family','proprietorship','partnership','opc','private_limited','public_limited','association','trust') NOT NULL DEFAULT 'individual',
+  `display_name` varchar(200) NOT NULL,
+  `pan` varchar(10) DEFAULT NULL,
+  `registration_number` varchar(60) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `phone` varchar(30) DEFAULT NULL,
+  `address_line1` varchar(200) DEFAULT NULL,
+  `address_line2` varchar(200) DEFAULT NULL,
+  `city` varchar(100) DEFAULT NULL,
+  `state` varchar(100) DEFAULT NULL,
+  `pincode` varchar(12) DEFAULT NULL,
+  `country` varchar(100) NOT NULL DEFAULT 'India',
+  `onboarding_status` enum('draft','kyc_pending','kyc_verified','active','inactive') NOT NULL DEFAULT 'draft',
+  `kyc_status` enum('pending','verified','rejected') NOT NULL DEFAULT 'pending',
+  `notes` text,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Leadership / KYC persons tied to a client — directors, partners,
+-- trustees, the proprietor, the karta, the individual themselves, etc.
+-- effective_to + status='removed' is how "change leadership" is tracked:
+-- the old record is closed out rather than overwritten, so there's an
+-- audit trail of who led the client and when.
+DROP TABLE IF EXISTS `legalops_client_leadership`;
+CREATE TABLE `legalops_client_leadership` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `client_id` int NOT NULL,
+  `role` varchar(60) NOT NULL,
+  `full_name` varchar(150) NOT NULL,
+  `pan` varchar(10) DEFAULT NULL,
+  `id_proof_type` varchar(40) DEFAULT NULL,
+  `id_proof_number` varchar(60) DEFAULT NULL,
+  `din_or_membership_no` varchar(40) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `phone` varchar(30) DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `kyc_verified` tinyint(1) NOT NULL DEFAULT 0,
+  `status` enum('active','removed') NOT NULL DEFAULT 'active',
+  `effective_from` date DEFAULT NULL,
+  `effective_to` date DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `client_id` (`client_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Secondary contacts: people at the client who aren't leadership/KYC
+-- subjects but who the firm deals with day to day (accountant, ops POC…)
+DROP TABLE IF EXISTS `legalops_client_contacts`;
+CREATE TABLE `legalops_client_contacts` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `client_id` int NOT NULL,
+  `full_name` varchar(150) NOT NULL,
+  `designation` varchar(100) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `phone` varchar(30) DEFAULT NULL,
+  `notes` varchar(255) DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `client_id` (`client_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Uploaded KYC / onboarding documents. Files live on disk under
+-- uploads/clients/{client_id}/ — this table only stores metadata.
+-- leadership_id is set when a document belongs to a specific leader's
+-- KYC (e.g. a director's PAN scan) rather than the client as a whole.
+DROP TABLE IF EXISTS `legalops_client_documents`;
+CREATE TABLE `legalops_client_documents` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `client_id` int NOT NULL,
+  `leadership_id` int DEFAULT NULL,
+  `doc_type` varchar(80) NOT NULL,
+  `stored_name` varchar(255) NOT NULL,
+  `original_name` varchar(255) NOT NULL,
+  `mime_type` varchar(100) DEFAULT NULL,
+  `file_size` int DEFAULT NULL,
+  `uploaded_by` int DEFAULT NULL,
+  `uploaded_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `client_id` (`client_id`),
+  KEY `leadership_id` (`leadership_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
@@ -207,5 +304,38 @@ INSERT INTO `legalops_activity` (`uid`, `action`, `description`) VALUES
 (1, 'case_status', 'Moved LO-2026-002 — Anand Constructions — Arbitration to closed'),
 (1, 'task_created', 'Added task "Draft SPA disclosure schedules"'),
 (1, 'login', 'Signed in to LegalOps');
+
+INSERT INTO `legalops_clients`
+  (`id`, `entity_type`, `display_name`, `pan`, `registration_number`, `email`, `phone`,
+   `address_line1`, `address_line2`, `city`, `state`, `pincode`, `onboarding_status`, `kyc_status`, `created_by`) VALUES
+(1, 'private_limited', 'Sundaram Textiles Pvt Ltd', 'AABCS1234D', 'U17110TN2014PTC098765', 'contact@sundaramtextiles.in', '+91 44 2345 6789',
+  'Plot 12, SIDCO Industrial Estate', 'Guindy', 'Chennai', 'Tamil Nadu', '600032', 'active', 'verified', 1),
+(2, 'individual', 'R. Krishnan', 'BFKPK4567L', NULL, 'r.krishnan@example.com', '+91 98400 12345',
+  '14 Lake View Road', 'Nungambakkam', 'Chennai', 'Tamil Nadu', '600034', 'active', 'verified', 1),
+(3, 'private_limited', 'Velan Foods Ltd', 'AAFCV6789K', 'U15400TN2011PLC076543', 'legal@velanfoods.in', '+91 422 234 5678',
+  'No. 8, Avinashi Road', NULL, 'Coimbatore', 'Tamil Nadu', '641018', 'kyc_verified', 'verified', 1),
+(4, 'family', 'Subramaniam Family (HUF)', 'AAHHS3456M', NULL, 'subramaniam.family@example.com', '+91 98410 65432',
+  '21 Temple Street', 'Mylapore', 'Chennai', 'Tamil Nadu', '600004', 'kyc_pending', 'pending', 1),
+(5, 'partnership', 'Anand Constructions', 'AAJFA2345N', 'TN/ROF/2009/4521', 'info@anandconstructions.in', '+91 44 4567 8901',
+  '56 Anna Salai', NULL, 'Chennai', 'Tamil Nadu', '600002', 'active', 'verified', 1),
+(6, 'trust', 'Meridian Capital Charitable Trust', 'AAATM7890P', 'TN/TRUST/2018/1123', 'trustoffice@meridiancapital.in', '+91 44 6789 0123',
+  '101 Apex Towers, OMR', NULL, 'Chennai', 'Tamil Nadu', '600096', 'draft', 'pending', 1);
+
+INSERT INTO `legalops_client_leadership`
+  (`client_id`, `role`, `full_name`, `pan`, `id_proof_type`, `id_proof_number`, `din_or_membership_no`, `email`, `phone`, `kyc_verified`, `status`, `effective_from`, `effective_to`) VALUES
+(1, 'Managing Director', 'Aishwarya Krishnan', 'AABCS1111D', 'Aadhaar', 'XXXX-XXXX-4521', 'DIN08123456', 'aishwarya@sundaramtextiles.in', '+91 98400 11111', 1, 'active', '2014-08-01', NULL),
+(1, 'Director', 'Karthik Sundaram', 'AABCS2222E', 'Passport', 'P1234567', 'DIN08234567', 'karthik@sundaramtextiles.in', '+91 98400 22222', 1, 'active', '2014-08-01', NULL),
+(1, 'Director', 'Geetha Ramaswamy', 'AABCS3333F', 'Aadhaar', 'XXXX-XXXX-7788', 'DIN08001122', 'geetha@sundaramtextiles.in', NULL, 1, 'removed', '2014-08-01', '2025-11-30'),
+(2, 'Individual', 'R. Krishnan', 'BFKPK4567L', 'Aadhaar', 'XXXX-XXXX-9012', NULL, 'r.krishnan@example.com', '+91 98400 12345', 1, 'active', '2020-01-01', NULL),
+(3, 'Director', 'Velan Murugesan', 'AAFCV1111K', 'Aadhaar', 'XXXX-XXXX-3344', 'DIN07112233', 'velan@velanfoods.in', '+91 422 200 1111', 1, 'active', '2011-05-01', NULL),
+(4, 'Karta', 'M. Subramaniam', 'AAHHS3456M', 'Aadhaar', 'XXXX-XXXX-5566', NULL, 'subramaniam.family@example.com', '+91 98410 65432', 0, 'active', '2015-01-01', NULL),
+(5, 'Managing Partner', 'Anand Vellaichamy', 'AAJFA1111N', 'Aadhaar', 'XXXX-XXXX-1212', NULL, 'anand@anandconstructions.in', '+91 44 4567 1111', 1, 'active', '2009-03-01', NULL),
+(5, 'Partner', 'Suresh Babu', 'AAJFA2222P', 'Voter ID', 'TN/AB1234567', NULL, 'suresh@anandconstructions.in', '+91 44 4567 2222', 1, 'active', '2009-03-01', NULL);
+
+INSERT INTO `legalops_client_contacts` (`client_id`, `full_name`, `designation`, `email`, `phone`, `notes`) VALUES
+(1, 'Priya Natarajan', 'Company Secretary', 'priya.cs@sundaramtextiles.in', '+91 98400 33333', 'Primary point of contact for filings'),
+(1, 'Mohan Raj', 'Finance Manager', 'mohan@sundaramtextiles.in', '+91 98400 44444', NULL),
+(3, 'Lakshmi Iyer', 'Legal Counsel (in-house)', 'lakshmi@velanfoods.in', '+91 422 200 2222', 'Coordinates on IP matters'),
+(5, 'Divya Anand', 'Site Office Coordinator', 'divya@anandconstructions.in', '+91 44 4567 3333', NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;

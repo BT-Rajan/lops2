@@ -610,6 +610,16 @@ table.table tbody tr:hover { background: rgba(59,111,224,0.045); }
 .badge-medium { background: rgba(201,162,39,0.14); color: var(--brass-500); }
 .badge-low { background: rgba(91,100,120,0.12); color: var(--muted-text); }
 
+.badge-onboard-draft { background: rgba(91,100,120,0.12); color: var(--muted-text); }
+.badge-onboard-kyc_pending { background: rgba(201,162,39,0.14); color: var(--brass-500); }
+.badge-onboard-kyc_verified { background: rgba(59,111,224,0.12); color: var(--accent-600); }
+.badge-onboard-active { background: rgba(30,142,90,0.12); color: var(--success); }
+.badge-onboard-inactive { background: rgba(193,59,59,0.1); color: var(--danger); }
+
+.badge-kyc-pending { background: rgba(201,162,39,0.14); color: var(--brass-500); }
+.badge-kyc-verified { background: rgba(30,142,90,0.12); color: var(--success); }
+.badge-kyc-rejected { background: rgba(193,59,59,0.1); color: var(--danger); }
+
 .activity-feed { display: flex; flex-direction: column; gap: 16px; }
 .activity-item { display: flex; gap: 12px; }
 .activity-dot {

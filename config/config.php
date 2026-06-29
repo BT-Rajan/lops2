@@ -14,3 +14,8 @@ define('DB_PASS', '');
 // Folder name this app lives in under htdocs, e.g. http://localhost/legalops
 define('APP_BASE_PATH', '/legalops');
 define('APP_NAME', 'LegalOps');
+
+// --- Client document uploads -----------------------------------------------
+define('UPLOAD_DIR', __DIR__ . '/../uploads/clients/');
+define('UPLOAD_MAX_BYTES', 5 * 1024 * 1024); // 5MB
+define('UPLOAD_ALLOWED_EXT', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']);
