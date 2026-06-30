@@ -14,6 +14,7 @@ define('DB_PASS', '');
 // Folder name this app lives in under htdocs, e.g. http://localhost/legalops
 define('APP_BASE_PATH', '/legalops');
 define('APP_NAME', 'LegalOps');
+define('APP_TIMEZONE', 'Asia/Kolkata');
 
 // --- Client document uploads -----------------------------------------------
 define('UPLOAD_DIR', __DIR__ . '/../uploads/clients/');

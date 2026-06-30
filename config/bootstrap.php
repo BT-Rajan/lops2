@@ -120,6 +120,44 @@ function initials(string $name): string
     return mb_strtoupper(mb_substr($name, 0, 2));
 }
 
+function is_admin(?array $user): bool
+{
+    return ($user['role'] ?? 'member') === 'admin';
+}
+
+/** Send non-admins back to the dashboard with a flash message. */
+function require_admin(\PHPAuth\Auth $auth): array
+{
+    $user = require_login($auth);
+    if (!is_admin($user)) {
+        flash('error', "You'll need admin access for that.");
+        header('Location: ' . base_url('dashboard.php'));
+        exit;
+    }
+    return $user;
+}
+
+function get_setting(PDO $pdo, string $key, string $default = ''): string
+{
+    static $cache = [];
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+    $stmt = $pdo->prepare('SELECT setting_value FROM legalops_settings WHERE setting_key = ?');
+    $stmt->execute([$key]);
+    $value = $stmt->fetchColumn();
+    return $cache[$key] = ($value !== false ? $value : $default);
+}
+
+function set_setting(PDO $pdo, string $key, string $value): void
+{
+    $stmt = $pdo->prepare(
+        'INSERT INTO legalops_settings (setting_key, setting_value) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE setting_value = ?'
+    );
+    $stmt->execute([$key, $value, $value]);
+}
+
 function time_ago(string $datetime): string
 {
     $diff = time() - strtotime($datetime);

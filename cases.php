@@ -19,22 +19,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_valid()) {
         $priority = in_array($_POST['priority'] ?? '', ['low', 'medium', 'high'], true) ? $_POST['priority'] : 'medium';
         $openedOn = $_POST['opened_on'] ?: null;
         $dueOn = $_POST['due_on'] ?: null;
+        $nextHearingDate = $_POST['next_hearing_date'] ?: null;
+        $nextHearingTime = $_POST['next_hearing_time'] ?: null;
 
         if ($title === '' || $client === '' || $caseNumber === '') {
             flash('error', 'Matter number, title and client are required.');
         } else {
             if ($id > 0) {
                 $stmt = $pdo->prepare(
-                    'UPDATE legalops_cases SET case_number=?, title=?, client_name=?, practice_area=?, status=?, priority=?, opened_on=?, due_on=? WHERE id=?'
+                    'UPDATE legalops_cases SET case_number=?, title=?, client_name=?, practice_area=?, status=?, priority=?, opened_on=?, due_on=?, next_hearing_date=?, next_hearing_time=? WHERE id=?'
                 );
-                $stmt->execute([$caseNumber, $title, $client, $practiceArea, $status, $priority, $openedOn, $dueOn, $id]);
+                $stmt->execute([$caseNumber, $title, $client, $practiceArea, $status, $priority, $openedOn, $dueOn, $nextHearingDate, $nextHearingTime, $id]);
                 log_activity($pdo, (int)$current_user['uid'], 'case_updated', 'Updated case ' . $caseNumber . ' — ' . $title);
                 flash('success', 'Matter updated.');
             } else {
                 $stmt = $pdo->prepare(
-                    'INSERT INTO legalops_cases (case_number, title, client_name, practice_area, status, priority, opened_on, due_on, created_by) VALUES (?,?,?,?,?,?,?,?,?)'
+                    'INSERT INTO legalops_cases (case_number, title, client_name, practice_area, status, priority, opened_on, due_on, next_hearing_date, next_hearing_time, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
                 );
-                $stmt->execute([$caseNumber, $title, $client, $practiceArea, $status, $priority, $openedOn, $dueOn, $current_user['uid']]);
+                $stmt->execute([$caseNumber, $title, $client, $practiceArea, $status, $priority, $openedOn, $dueOn, $nextHearingDate, $nextHearingTime, $current_user['uid']]);
                 log_activity($pdo, (int)$current_user['uid'], 'case_created', 'Opened case ' . $caseNumber . ' — ' . $title);
                 flash('success', 'New matter opened.');
             }
@@ -150,6 +152,17 @@ require __DIR__ . '/includes/app_header.php';
         </div>
       </div>
 
+      <div class="input-row">
+        <div class="field">
+          <label>Next hearing date <span style="color:var(--text-muted);font-weight:400">(drives the auto reminder task)</span></label>
+          <input class="input" type="date" name="next_hearing_date" id="f-next_hearing_date">
+        </div>
+        <div class="field">
+          <label>Hearing time <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+          <input class="input" type="time" name="next_hearing_time" id="f-next_hearing_time">
+        </div>
+      </div>
+
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
         <button type="button" class="btn btn-ghost" id="case-cancel-btn">Cancel</button>
         <button type="submit" class="btn btn-primary">Save matter</button>
@@ -171,7 +184,7 @@ require __DIR__ . '/includes/app_header.php';
   <?php if ($cases): ?>
   <table class="table">
     <thead>
-      <tr><th>Matter</th><th>Client</th><th>Practice area</th><th>Status</th><th>Priority</th><th>Due</th><th></th></tr>
+      <tr><th>Matter</th><th>Client</th><th>Practice area</th><th>Status</th><th>Priority</th><th>Due</th><th>Next hearing</th><th></th></tr>
     </thead>
     <tbody>
       <?php foreach ($cases as $c): ?>
@@ -185,6 +198,7 @@ require __DIR__ . '/includes/app_header.php';
         <td><span class="badge badge-<?= htmlspecialchars($c['status']) ?>"><?= htmlspecialchars($c['status']) ?></span></td>
         <td><span class="badge badge-<?= htmlspecialchars($c['priority']) ?>"><?= htmlspecialchars($c['priority']) ?></span></td>
         <td class="case-client"><?= $c['due_on'] ? date('d M Y', strtotime($c['due_on'])) : '—' ?></td>
+        <td class="case-client"><?= $c['next_hearing_date'] ? date('d M Y', strtotime($c['next_hearing_date'])) : '—' ?></td>
         <td style="text-align:right;white-space:nowrap">
           <button class="icon-btn btn-sm case-edit-btn" style="display:inline-grid"
             type="button"
@@ -250,6 +264,8 @@ require __DIR__ . '/includes/app_header.php';
       document.getElementById('f-priority').value = c.priority;
       document.getElementById('f-opened_on').value = c.opened_on || '';
       document.getElementById('f-due_on').value = c.due_on || '';
+      document.getElementById('f-next_hearing_date').value = c.next_hearing_date || '';
+      document.getElementById('f-next_hearing_time').value = c.next_hearing_time || '';
       openPanel(true);
     });
   });

@@ -119,6 +119,7 @@ CREATE TABLE `phpauth_users` (
   `full_name` varchar(150) DEFAULT NULL,
   `job_title` varchar(100) DEFAULT NULL,
   `avatar_color` varchar(7) DEFAULT '#3B6FE0',
+  `role` enum('admin','member') NOT NULL DEFAULT 'member',
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -145,6 +146,8 @@ CREATE TABLE `legalops_cases` (
   `priority` enum('low','medium','high') NOT NULL DEFAULT 'medium',
   `opened_on` date DEFAULT NULL,
   `due_on` date DEFAULT NULL,
+  `next_hearing_date` date DEFAULT NULL,
+  `next_hearing_time` time DEFAULT NULL,
   `created_by` int DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -156,14 +159,57 @@ CREATE TABLE `legalops_tasks` (
   `id` int NOT NULL AUTO_INCREMENT,
   `case_id` int DEFAULT NULL,
   `title` varchar(200) NOT NULL,
+  `notes` varchar(500) DEFAULT NULL,
   `due_on` date DEFAULT NULL,
+  `due_time` time DEFAULT NULL,
   `priority` enum('low','medium','high') NOT NULL DEFAULT 'medium',
-  `status` enum('pending','in_progress','done') NOT NULL DEFAULT 'pending',
+  `status` enum('pending','in_progress','hold','done') NOT NULL DEFAULT 'pending',
+  `hold_reason` varchar(255) DEFAULT NULL,
   `assigned_to` int DEFAULT NULL,
   `created_by` int DEFAULT NULL,
+  `source` enum('manual','hearing_cron','google_import','microsoft_import') NOT NULL DEFAULT 'manual',
+  `google_event_id` varchar(255) DEFAULT NULL,
+  `microsoft_event_id` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `case_id` (`case_id`)
+  KEY `case_id` (`case_id`),
+  KEY `assigned_to` (`assigned_to`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- App-wide settings: hearing reminder offset, Google/Microsoft OAuth app
+-- credentials (so an admin can configure these from the UI, no redeploy).
+DROP TABLE IF EXISTS `legalops_settings`;
+CREATE TABLE `legalops_settings` (
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` text,
+  PRIMARY KEY (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `legalops_settings` (`setting_key`, `setting_value`) VALUES
+('hearing_reminder_offset_days', '1'),
+('google_client_id', ''),
+('google_client_secret', ''),
+('microsoft_client_id', ''),
+('microsoft_client_secret', '');
+
+-- Per-user connected calendar (Google or Microsoft). A user can connect
+-- one of each; sync.php / cron/calendar_sync.php act on whichever rows
+-- have is_active = 1.
+DROP TABLE IF EXISTS `legalops_calendar_accounts`;
+CREATE TABLE `legalops_calendar_accounts` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `uid` int NOT NULL,
+  `provider` enum('google','microsoft') NOT NULL,
+  `access_token` text,
+  `refresh_token` text,
+  `token_expires_at` datetime DEFAULT NULL,
+  `calendar_id` varchar(255) NOT NULL DEFAULT 'primary',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `last_synced_at` datetime DEFAULT NULL,
+  `connected_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uid_provider` (`uid`, `provider`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `legalops_activity`;
@@ -354,24 +400,24 @@ CREATE TABLE `legalops_invoice_items` (
 -- Password: LegalOps@123
 -- ---------------------------------------------------------------------
 
-INSERT INTO `phpauth_users` (`email`, `password`, `isactive`, `full_name`, `job_title`, `avatar_color`) VALUES
-('demo@legalops.local', '$2b$10$K0Apvp0t19nqq2bBUtbs/.EbxuJDXMzywvt.mUSIDYbAlG5fMVs5S', 1, 'Aishwarya Krishnan', 'Managing Partner', '#3B6FE0');
+INSERT INTO `phpauth_users` (`email`, `password`, `isactive`, `full_name`, `job_title`, `avatar_color`, `role`) VALUES
+('demo@legalops.local', '$2b$10$K0Apvp0t19nqq2bBUtbs/.EbxuJDXMzywvt.mUSIDYbAlG5fMVs5S', 1, 'Aishwarya Krishnan', 'Managing Partner', '#3B6FE0', 'admin');
 
-INSERT INTO `legalops_cases` (`case_number`, `title`, `client_name`, `practice_area`, `status`, `priority`, `opened_on`, `due_on`, `created_by`) VALUES
-('LO-2026-014', 'Sundaram Textiles — Commercial Lease Renewal', 'Sundaram Textiles Pvt Ltd', 'Real Estate', 'open', 'high', '2026-04-02', '2026-07-10', 1),
-('LO-2026-021', 'Krishnan vs. Coastal Logistics', 'R. Krishnan', 'Civil Litigation', 'open', 'medium', '2026-05-11', '2026-08-01', 1),
-('LO-2026-009', 'Velan Foods — Trademark Opposition', 'Velan Foods Ltd', 'Intellectual Property', 'pending', 'high', '2026-03-18', '2026-07-05', 1),
-('LO-2026-027', 'Estate of M. Subramaniam — Probate', 'Subramaniam Family', 'Estate & Succession', 'open', 'low', '2026-06-02', '2026-09-15', 1),
-('LO-2026-002', 'Anand Constructions — Arbitration', 'Anand Constructions', 'Arbitration', 'closed', 'medium', '2026-01-09', '2026-04-30', 1),
-('LO-2026-033', 'Meridian Capital — Share Purchase Agreement', 'Meridian Capital Partners', 'Corporate', 'open', 'high', '2026-06-15', '2026-07-20', 1);
+INSERT INTO `legalops_cases` (`case_number`, `title`, `client_name`, `practice_area`, `status`, `priority`, `opened_on`, `due_on`, `next_hearing_date`, `created_by`) VALUES
+('LO-2026-014', 'Sundaram Textiles — Commercial Lease Renewal', 'Sundaram Textiles Pvt Ltd', 'Real Estate', 'open', 'high', '2026-04-02', '2026-07-10', NULL, 1),
+('LO-2026-021', 'Krishnan vs. Coastal Logistics', 'R. Krishnan', 'Civil Litigation', 'open', 'medium', '2026-05-11', '2026-08-01', '2026-07-08', 1),
+('LO-2026-009', 'Velan Foods — Trademark Opposition', 'Velan Foods Ltd', 'Intellectual Property', 'pending', 'high', '2026-03-18', '2026-07-05', '2026-07-15', 1),
+('LO-2026-027', 'Estate of M. Subramaniam — Probate', 'Subramaniam Family', 'Estate & Succession', 'open', 'low', '2026-06-02', '2026-09-15', NULL, 1),
+('LO-2026-002', 'Anand Constructions — Arbitration', 'Anand Constructions', 'Arbitration', 'closed', 'medium', '2026-01-09', '2026-04-30', NULL, 1),
+('LO-2026-033', 'Meridian Capital — Share Purchase Agreement', 'Meridian Capital Partners', 'Corporate', 'open', 'high', '2026-06-15', '2026-07-20', NULL, 1);
 
-INSERT INTO `legalops_tasks` (`case_id`, `title`, `due_on`, `priority`, `status`, `assigned_to`, `created_by`) VALUES
-(1, 'Review revised lease clauses with client', '2026-07-02', 'high', 'in_progress', 1, 1),
-(2, 'File rejoinder with district court', '2026-07-04', 'high', 'pending', 1, 1),
-(3, 'Respond to TM opposition board notice', '2026-07-06', 'medium', 'pending', 1, 1),
-(6, 'Draft SPA disclosure schedules', '2026-07-01', 'high', 'in_progress', 1, 1),
-(4, 'Collect succession certificates from family', '2026-07-12', 'low', 'pending', 1, 1),
-(5, 'Close out arbitration billing file', '2026-06-30', 'medium', 'done', 1, 1);
+INSERT INTO `legalops_tasks` (`case_id`, `title`, `due_on`, `priority`, `status`, `assigned_to`, `created_by`, `source`) VALUES
+(1, 'Review revised lease clauses with client', '2026-07-02', 'high', 'in_progress', 1, 1, 'manual'),
+(2, 'File rejoinder with district court', '2026-07-04', 'high', 'pending', 1, 1, 'manual'),
+(3, 'Respond to TM opposition board notice', '2026-07-06', 'medium', 'pending', 1, 1, 'manual'),
+(6, 'Draft SPA disclosure schedules', '2026-07-01', 'high', 'in_progress', 1, 1, 'manual'),
+(4, 'Collect succession certificates from family', '2026-07-12', 'low', 'pending', 1, 1, 'manual'),
+(5, 'Close out arbitration billing file', '2026-06-30', 'medium', 'done', 1, 1, 'manual');
 
 INSERT INTO `legalops_activity` (`uid`, `action`, `description`) VALUES
 (1, 'case_created', 'Opened case LO-2026-033 — Meridian Capital — Share Purchase Agreement'),

@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/config/bootstrap.php';
 $current_user = require_login($auth);
+$uid = (int)$current_user['uid'];
+$isAdmin = is_admin($current_user);
 
 $page_title = 'Dashboard';
 $active_nav = 'dashboard';
@@ -8,22 +10,44 @@ $active_nav = 'dashboard';
 $openCases = (int)$pdo->query("SELECT COUNT(*) FROM legalops_cases WHERE status = 'open'")->fetchColumn();
 $pendingCases = (int)$pdo->query("SELECT COUNT(*) FROM legalops_cases WHERE status = 'pending'")->fetchColumn();
 $closedCases = (int)$pdo->query("SELECT COUNT(*) FROM legalops_cases WHERE status = 'closed'")->fetchColumn();
-$openTasks = (int)$pdo->query("SELECT COUNT(*) FROM legalops_tasks WHERE status != 'done'")->fetchColumn();
-$dueSoon = (int)$pdo->query("SELECT COUNT(*) FROM legalops_tasks WHERE status != 'done' AND due_on <= CURDATE() + INTERVAL 7 DAY")->fetchColumn();
+
+// Task figures and the "upcoming tasks" panel are scoped to the current
+// user unless they're an admin — members never see another user's task
+// counts or list, even in aggregate, on their own dashboard.
+$taskScopeSql = $isAdmin ? '' : ' AND (assigned_to = ? OR created_by = ?)';
+$taskScopeSqlAliased = $isAdmin ? '' : ' AND (t.assigned_to = ? OR t.created_by = ?)';
+$taskScopeParams = $isAdmin ? [] : [$uid, $uid];
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM legalops_tasks WHERE status != 'done'" . $taskScopeSql);
+$stmt->execute($taskScopeParams);
+$openTasks = (int)$stmt->fetchColumn();
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM legalops_tasks WHERE status != 'done' AND due_on <= CURDATE() + INTERVAL 7 DAY" . $taskScopeSql);
+$stmt->execute($taskScopeParams);
+$dueSoon = (int)$stmt->fetchColumn();
 
 $recentCases = $pdo->query(
     "SELECT * FROM legalops_cases ORDER BY created_at DESC LIMIT 5"
 )->fetchAll(PDO::FETCH_ASSOC);
 
-$upcomingTasks = $pdo->query(
+$stmt = $pdo->prepare(
     "SELECT t.*, c.title AS case_title FROM legalops_tasks t
      LEFT JOIN legalops_cases c ON c.id = t.case_id
+     WHERE 1=1" . $taskScopeSqlAliased . "
      ORDER BY (t.status='done') ASC, t.due_on ASC LIMIT 6"
-)->fetchAll(PDO::FETCH_ASSOC);
+);
+$stmt->execute($taskScopeParams);
+$upcomingTasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$activity = $pdo->query(
-    "SELECT * FROM legalops_activity ORDER BY created_at DESC LIMIT 6"
-)->fetchAll(PDO::FETCH_ASSOC);
+// Activity feed: admins see the firm-wide feed; members see only
+// activity tied to them (their own actions, or actions on their tasks).
+if ($isAdmin) {
+    $activity = $pdo->query("SELECT * FROM legalops_activity ORDER BY created_at DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $stmt = $pdo->prepare("SELECT * FROM legalops_activity WHERE uid = ? ORDER BY created_at DESC LIMIT 6");
+    $stmt->execute([$uid]);
+    $activity = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
 require __DIR__ . '/includes/app_header.php';
 ?>
@@ -100,7 +124,7 @@ require __DIR__ . '/includes/app_header.php';
     <div class="card card-pad">
       <div class="card-head">
         <h3>Upcoming tasks</h3>
-        <a class="link" href="<?= base_url('modules.php?m=tasks') ?>">View all →</a>
+        <a class="link" href="<?= base_url('tasks.php') ?>">View all →</a>
       </div>
       <?php if ($upcomingTasks): foreach ($upcomingTasks as $t): ?>
         <div class="task-row <?= $t['status'] === 'done' ? 'done' : '' ?>">

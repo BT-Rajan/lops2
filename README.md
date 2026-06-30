@@ -55,6 +55,43 @@ private/public limited company, association and trust clients:
   type: CIN for companies, firm registration/LLPIN for partnerships,
   GST/Shop Act/MSME for proprietorships, and so on.
 
+## Tasks &amp; Calendar module
+
+- **Tasks** — full CRUD, search (title/notes/matter), priority, due
+  date/time, and a status lifecycle of pending → in progress → hold →
+  done. Putting a task on hold asks for an optional reason, shown on the
+  task card. Assignment: admins can assign any task to any team member;
+  members can only ever assign tasks to themselves (enforced server-side,
+  not just hidden in the UI).
+- **Access control** — there are now two roles, `admin` and `member`
+  (see the `role` column on `phpauth_users`). Admins see and manage
+  every task and every calendar across the firm. Members only ever see
+  their own — this is enforced on every query, not just hidden in the
+  UI, and double-checked again before any edit/delete/hold action goes
+  through. The very first user is auto-promoted to admin by the
+  migration; change roles afterwards from **Firm settings → Team & roles**
+  (admin only).
+- **Court hearing reminders** — set a "Next hearing date" (and optional
+  time) on a case in `cases.php`, then schedule
+  `cron/hearing_reminders.php` to run once a day. It creates a task for
+  whoever opened the case, timed either "tomorrow" or "the day after
+  tomorrow" before the hearing — configurable per firm at **Firm
+  settings → Court hearing reminders**. Re-running it the same day won't
+  create duplicates.
+- **Calendar** — a month-grid view of tasks by due date. Members only
+  ever see their own calendar; admins get a team-member switcher.
+  Two-way sync with Google Calendar and Microsoft Outlook Calendar is
+  available per user (each person connects their own account from the
+  Calendar page) — tasks with a due date push out as events, and events
+  added directly in Google/Outlook import back as tasks. An admin has to
+  add OAuth app credentials first, from **Firm settings**, which also
+  shows the exact redirect URI to register with Google/Microsoft.
+  Schedule `cron/calendar_sync.php` every 10–15 minutes for sync to run
+  in the background, in addition to the "Sync now" button.
+- Both cron scripts are CLI-only (they refuse to run if hit over HTTP)
+  and the `cron/` folder is denied to direct web access either way, same
+  pattern as `config/`, `libs/`, and `sql/`.
+
 ## Notes
 
 - Sessions, not cookies: `uses_session` is set to `1` in `phpauth_config`
@@ -71,7 +108,7 @@ private/public limited company, association and trust clients:
 - Profile fields (`full_name`, `job_title`, `avatar_color`) live as extra
   columns on `phpauth_users`, since PHPAuth's `addUser()`/`updateUser()`
   write straight into named columns on that table.
-- Tasks / Calendar / Documents in the sidebar are still placeholder pages
-  (`modules.php`). Dashboard, Cases, Clients, and Billing (invoicing for
+- Documents in the sidebar is still a placeholder page (`modules.php`).
+  Dashboard, Cases, Clients, Tasks, Calendar, and Billing (invoicing for
   India + GCC — see `INVOICING.md`) are fully wired up. Say the word and
-  any of the remaining placeholders can be built out next.
+  Documents can be built out next.

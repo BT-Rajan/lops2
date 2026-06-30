@@ -606,6 +606,7 @@ table.table tbody tr:hover { background: rgba(59,111,224,0.045); }
 .badge-closed { background: rgba(91,100,120,0.12); color: var(--muted-text); }
 .badge-done { background: rgba(30,142,90,0.12); color: var(--success); }
 .badge-in_progress { background: rgba(59,111,224,0.12); color: var(--accent-600); }
+.badge-hold { background: rgba(193,59,59,0.1); color: var(--danger); }
 .badge-high { background: rgba(193,59,59,0.1); color: var(--danger); }
 .badge-medium { background: rgba(201,162,39,0.14); color: var(--brass-500); }
 .badge-low { background: rgba(91,100,120,0.12); color: var(--muted-text); }
@@ -760,3 +761,36 @@ table.table tbody tr:hover { background: rgba(59,111,224,0.045); }
   position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; display: none;
 }
 .scrim.open { display: block; }
+
+/* Calendar month grid */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-grid-head { margin-bottom: 8px; }
+.cal-grid-head div { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); text-align: center; padding-bottom: 4px; }
+.cal-cell {
+  min-height: 96px;
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  padding: 8px;
+  background: var(--surface-card-solid);
+}
+.cal-cell-empty { background: transparent; border-color: transparent; }
+.cal-cell-today { border-color: var(--accent-600); box-shadow: 0 0 0 1px var(--accent-600) inset; }
+.cal-daynum { font-size: 12.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+.cal-cell-today .cal-daynum { color: var(--accent-600); }
+.cal-event {
+  font-size: 11px; font-weight: 600; padding: 3px 6px; border-radius: 5px; margin-bottom: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: var(--accent-100); color: var(--accent-600);
+}
+.cal-event-high { background: rgba(193,59,59,0.12); color: var(--danger); }
+.cal-event-medium { background: rgba(201,162,39,0.16); color: var(--brass-500); }
+.cal-event-low { background: rgba(91,100,120,0.12); color: var(--muted-text); }
+.cal-event-done { opacity: 0.5; text-decoration: line-through; }
+.cal-event-more { font-size: 10.5px; color: var(--text-muted); padding-left: 6px; }
+
+@media (max-width: 760px) {
+  .cal-grid { grid-template-columns: repeat(7, minmax(34px, 1fr)); gap: 3px; }
+  .cal-cell { min-height: 56px; padding: 4px; }
+  .cal-event { display: none; }
+  .cal-cell-today::after { content: '•'; color: var(--accent-600); }
+}

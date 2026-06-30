@@ -13,8 +13,8 @@ $nav_items = [
     'dashboard' => ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => 'dashboard.php'],
     'cases'     => ['label' => 'Cases',     'icon' => 'cases',     'href' => 'cases.php'],
     'clients'   => ['label' => 'Clients',   'icon' => 'clients',   'href' => 'clients.php'],
-    'tasks'     => ['label' => 'Tasks',     'icon' => 'tasks',     'href' => 'modules.php?m=tasks', 'soon' => true],
-    'calendar'  => ['label' => 'Calendar',  'icon' => 'calendar',  'href' => 'modules.php?m=calendar', 'soon' => true],
+    'tasks'     => ['label' => 'Tasks',     'icon' => 'tasks',     'href' => 'tasks.php'],
+    'calendar'  => ['label' => 'Calendar',  'icon' => 'calendar',  'href' => 'calendar.php'],
     'documents' => ['label' => 'Documents', 'icon' => 'documents', 'href' => 'modules.php?m=documents', 'soon' => true],
     'billing'   => ['label' => 'Billing',   'icon' => 'billing',   'href' => 'billing.php'],
 ];
@@ -49,6 +49,11 @@ $nav_items = [
     </nav>
 
     <div class="nav-group" style="margin-top:auto">
+      <?php if (is_admin($current_user)): ?>
+      <a class="nav-item <?= ($active_nav ?? '') === 'settings' ? 'active' : '' ?>" href="<?= base_url('settings.php') ?>">
+        <?= icon('settings') ?><span>Firm settings</span>
+      </a>
+      <?php endif; ?>
       <a class="nav-item <?= ($active_nav ?? '') === 'profile' ? 'active' : '' ?>" href="<?= base_url('profile.php') ?>">
         <?= icon('settings') ?><span>Account settings</span>
       </a>
