@@ -5,6 +5,7 @@ $current_user = require_login($auth);
 
 $page_title = 'Clients';
 $active_nav = 'clients';
+$breadcrumb = [['label' => 'Clients']];
 $types = client_types();
 
 // ---- Handle new-client creation (editing core details happens on the

@@ -4,6 +4,7 @@ $current_user = require_login($auth);
 
 $page_title = 'Cases';
 $active_nav = 'cases';
+$breadcrumb = [['label' => 'Cases']];
 
 // ---- Handle form actions (add / edit / delete) --------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_valid()) {
@@ -30,14 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_valid()) {
                     'UPDATE legalops_cases SET case_number=?, title=?, client_name=?, practice_area=?, status=?, priority=?, opened_on=?, due_on=?, next_hearing_date=?, next_hearing_time=? WHERE id=?'
                 );
                 $stmt->execute([$caseNumber, $title, $client, $practiceArea, $status, $priority, $openedOn, $dueOn, $nextHearingDate, $nextHearingTime, $id]);
-                log_activity($pdo, (int)$current_user['uid'], 'case_updated', 'Updated case ' . $caseNumber . ' — ' . $title);
+                log_activity($pdo, (int)$current_user['uid'], 'case_updated', 'Updated case ' . $caseNumber . ' — ' . $title, ['case_id' => $id]);
                 flash('success', 'Matter updated.');
             } else {
                 $stmt = $pdo->prepare(
                     'INSERT INTO legalops_cases (case_number, title, client_name, practice_area, status, priority, opened_on, due_on, next_hearing_date, next_hearing_time, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
                 );
                 $stmt->execute([$caseNumber, $title, $client, $practiceArea, $status, $priority, $openedOn, $dueOn, $nextHearingDate, $nextHearingTime, $current_user['uid']]);
-                log_activity($pdo, (int)$current_user['uid'], 'case_created', 'Opened case ' . $caseNumber . ' — ' . $title);
+                log_activity($pdo, (int)$current_user['uid'], 'case_created', 'Opened case ' . $caseNumber . ' — ' . $title, ['case_id' => (int)$pdo->lastInsertId()]);
                 flash('success', 'New matter opened.');
             }
         }
@@ -76,6 +77,19 @@ $sql .= ' ORDER BY created_at DESC';
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $cases = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Document counts per case, so the list shows at a glance which matters
+// have files attached — same idea as a task count would, just for docs.
+$docCounts = [];
+if ($cases) {
+    $ids = array_column($cases, 'id');
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare("SELECT case_id, COUNT(*) AS n FROM legalops_case_documents WHERE case_id IN ($placeholders) GROUP BY case_id");
+    $stmt->execute($ids);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $docCounts[(int)$row['case_id']] = (int)$row['n'];
+    }
+}
 
 require __DIR__ . '/includes/app_header.php';
 ?>
@@ -184,13 +198,13 @@ require __DIR__ . '/includes/app_header.php';
   <?php if ($cases): ?>
   <table class="table">
     <thead>
-      <tr><th>Matter</th><th>Client</th><th>Practice area</th><th>Status</th><th>Priority</th><th>Due</th><th>Next hearing</th><th></th></tr>
+      <tr><th>Matter</th><th>Client</th><th>Practice area</th><th>Status</th><th>Priority</th><th>Due</th><th>Next hearing</th><th>Docs</th><th></th></tr>
     </thead>
     <tbody>
       <?php foreach ($cases as $c): ?>
       <tr>
         <td>
-          <div class="case-title"><?= htmlspecialchars($c['title']) ?></div>
+          <a class="case-title" style="text-decoration:none;color:inherit" href="<?= base_url('case-view.php?id=' . (int)$c['id']) ?>"><?= htmlspecialchars($c['title']) ?></a>
           <div class="case-number"><?= htmlspecialchars($c['case_number']) ?></div>
         </td>
         <td class="case-client"><?= htmlspecialchars($c['client_name']) ?></td>
@@ -199,7 +213,13 @@ require __DIR__ . '/includes/app_header.php';
         <td><span class="badge badge-<?= htmlspecialchars($c['priority']) ?>"><?= htmlspecialchars($c['priority']) ?></span></td>
         <td class="case-client"><?= $c['due_on'] ? date('d M Y', strtotime($c['due_on'])) : '—' ?></td>
         <td class="case-client"><?= $c['next_hearing_date'] ? date('d M Y', strtotime($c['next_hearing_date'])) : '—' ?></td>
+        <td class="case-client">
+          <a style="display:inline-flex;align-items:center;gap:5px;color:inherit;text-decoration:none" href="<?= base_url('case-view.php?id=' . (int)$c['id'] . '#documents') ?>">
+            <?= icon('documents') ?> <?= (int)($docCounts[$c['id']] ?? 0) ?>
+          </a>
+        </td>
         <td style="text-align:right;white-space:nowrap">
+          <a class="icon-btn btn-sm" style="display:inline-grid" href="<?= base_url('case-view.php?id=' . (int)$c['id']) ?>" title="View matter"><?= icon('briefcase') ?></a>
           <button class="icon-btn btn-sm case-edit-btn" style="display:inline-grid"
             type="button"
             data-case='<?= htmlspecialchars(json_encode($c), ENT_QUOTES) ?>'><?= icon('edit') ?></button>

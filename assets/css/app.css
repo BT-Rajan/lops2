@@ -492,8 +492,139 @@ h1, h2, h3, .display {
   padding: 1px 6px;
   color: var(--text-muted);
   font-family: var(--font-mono);
+  flex-shrink: 0;
+  cursor: default;
+}
+.search-pill:focus-within kbd { opacity: 0; }
+/* One-time hint bubble shown on first visit */
+.search-hint-bubble {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink-900);
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 99;
+  animation: bubbleIn .2s ease;
+}
+.search-hint-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom-color: var(--ink-900);
+}
+@keyframes bubbleIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 .topbar-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+/* Theme toggle — shows moon in light mode, sun in dark mode */
+.theme-toggle-btn .icon-dark { display: none; }
+[data-theme="dark"] .theme-toggle-btn .icon-light { display: none; }
+[data-theme="dark"] .theme-toggle-btn .icon-dark { display: contents; }
+
+/* Notification bell badge */
+.notif-btn { position: relative; }
+.notif-badge {
+  position: absolute;
+  top: 4px; right: 4px;
+  min-width: 16px; height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Breadcrumb trail */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.bc-item {
+  color: var(--text-muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color .12s;
+}
+.bc-item svg { width: 13px; height: 13px; opacity: 0.7; }
+.bc-item:hover { color: var(--accent-600); }
+.bc-sep { opacity: 0.4; user-select: none; }
+.bc-current { color: var(--text-primary); font-weight: 600; }
+
+/* Clickable KPI cards */
+a.kpi-card { text-decoration: none; display: block; transition: box-shadow .15s, transform .15s; }
+a.kpi-card:hover { box-shadow: var(--shadow-pop); transform: translateY(-2px); }
+a.kpi-card:hover .kpi-value { color: var(--accent-600); }
+
+/* Quick-actions bar */
+.quick-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.qa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface-card);
+  border: 1px solid var(--border-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color .12s, box-shadow .12s;
+  white-space: nowrap;
+}
+.qa-btn svg { width: 15px; height: 15px; color: var(--accent-600); flex-shrink: 0; }
+.qa-btn:hover { border-color: var(--accent-600); box-shadow: 0 0 0 3px var(--accent-100); }
+
+/* Activity feed filter tabs */
+.feed-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.feed-tab {
+  padding: 5px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  transition: background .12s, color .12s;
+}
+.feed-tab:hover { background: var(--paper-100); color: var(--text-primary); }
+.feed-tab.active { background: var(--accent-100); color: var(--accent-600); border-color: transparent; }
+.activity-item[data-action] { transition: opacity .15s; }
+.activity-item.hidden { display: none; }
 .icon-btn {
   width: 38px; height: 38px;
   border-radius: 10px;

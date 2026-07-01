@@ -166,4 +166,23 @@
       setTimeout(function () { el.remove(); }, 400);
     }, 4500);
   });
+
+  // --- First-visit keyboard shortcut hint ----------------------------------
+  // Show a "Press / to search" bubble once per session under the search pill.
+  if (search && !sessionStorage.getItem('lo_search_hint_seen')) {
+    sessionStorage.setItem('lo_search_hint_seen', '1');
+    var pill = document.querySelector('.search-pill');
+    if (pill) {
+      pill.style.position = 'relative';
+      var bubble = document.createElement('div');
+      bubble.className = 'search-hint-bubble';
+      bubble.textContent = 'Press / to search from anywhere';
+      pill.appendChild(bubble);
+      setTimeout(function () {
+        bubble.style.transition = 'opacity .4s ease';
+        bubble.style.opacity = '0';
+        setTimeout(function () { bubble.remove(); }, 400);
+      }, 3500);
+    }
+  }
 })();

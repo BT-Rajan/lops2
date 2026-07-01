@@ -25,6 +25,10 @@ ALTER TABLE `legalops_cases`
   ADD COLUMN IF NOT EXISTS `next_hearing_date` date DEFAULT NULL AFTER `due_on`,
   ADD COLUMN IF NOT EXISTS `next_hearing_time` time DEFAULT NULL AFTER `next_hearing_date`;
 
+ALTER TABLE `legalops_activity`
+  ADD COLUMN IF NOT EXISTS `case_id` int DEFAULT NULL AFTER `client_id`,
+  ADD KEY IF NOT EXISTS `case_id` (`case_id`);
+
 ALTER TABLE `legalops_tasks`
   ADD COLUMN IF NOT EXISTS `notes` varchar(500) DEFAULT NULL AFTER `title`,
   ADD COLUMN IF NOT EXISTS `due_time` time DEFAULT NULL AFTER `due_on`,

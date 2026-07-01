@@ -1,13 +1,27 @@
 <?php
 /**
  * Expects $auth, $pdo (from bootstrap) and optionally:
- *   $page_title   – shown in <title> and as a fallback heading
+ *   $page_title   – shown in <title> and topbar breadcrumb
  *   $active_nav   – one of the keys in $nav_items below, for highlighting
+ *   $breadcrumb   – array of ['label'=>'...','href'=>'...'] trail items
+ *                   e.g. [['label'=>'Cases','href'=>'cases.php'],['label'=>$case['title']]]
+ *                   Last item is the current page (no href needed).
  */
 require_once __DIR__ . '/icons.php';
 
 $current_user = $auth->getCurrentUser();
 $theme = ($_COOKIE['legalops_theme'] ?? 'light') === 'dark' ? 'dark' : 'light';
+
+// Open task count for the bell badge — scoped to the current user
+// unless they're an admin, same access rule as everywhere else.
+$_bell_uid = (int)($current_user['uid'] ?? 0);
+if (is_admin($current_user)) {
+    $_bell_count = (int)$pdo->query("SELECT COUNT(*) FROM legalops_tasks WHERE status != 'done'")->fetchColumn();
+} else {
+    $_bell_stmt = $pdo->prepare("SELECT COUNT(*) FROM legalops_tasks WHERE status != 'done' AND (assigned_to = ? OR created_by = ?)");
+    $_bell_stmt->execute([$_bell_uid, $_bell_uid]);
+    $_bell_count = (int)$_bell_stmt->fetchColumn();
+}
 
 $nav_items = [
     'dashboard' => ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => 'dashboard.php'],
@@ -15,7 +29,7 @@ $nav_items = [
     'clients'   => ['label' => 'Clients',   'icon' => 'clients',   'href' => 'clients.php'],
     'tasks'     => ['label' => 'Tasks',     'icon' => 'tasks',     'href' => 'tasks.php'],
     'calendar'  => ['label' => 'Calendar',  'icon' => 'calendar',  'href' => 'calendar.php'],
-    'documents' => ['label' => 'Documents', 'icon' => 'documents', 'href' => 'modules.php?m=documents', 'soon' => true],
+    'documents' => ['label' => 'Documents', 'icon' => 'documents', 'href' => 'documents.php'],
     'billing'   => ['label' => 'Billing',   'icon' => 'billing',   'href' => 'billing.php'],
 ];
 ?>
@@ -78,15 +92,33 @@ $nav_items = [
   <div class="main">
     <header class="topbar">
       <button class="icon-btn menu-toggle" data-menu-toggle aria-label="Menu"><?= icon('menu') ?></button>
+
       <form class="search-pill" action="<?= base_url('cases.php') ?>" method="get" autocomplete="off" data-search-form>
         <?= icon('search') ?>
-        <input data-global-search name="q" style="border:none;outline:none;background:transparent;font:inherit;color:inherit;width:100%" type="text" placeholder="Search cases, clients, tasks…" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
-        <kbd>/</kbd>
+        <input data-global-search name="q"
+          style="border:none;outline:none;background:transparent;font:inherit;color:inherit;width:100%"
+          type="text"
+          placeholder="Search cases, clients, tasks, documents…"
+          value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
+        <kbd title="Press / to focus search">/</kbd>
         <div class="search-dropdown" data-search-dropdown></div>
       </form>
+
       <div class="topbar-actions">
-        <button class="icon-btn" data-theme-toggle aria-label="Toggle theme"><?= icon('sun') ?></button>
-        <button class="icon-btn" aria-label="Notifications"><?= icon('bell') ?></button>
+        <!-- Theme toggle: shows sun in dark mode, moon in light mode -->
+        <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="Toggle theme">
+          <span class="icon-light"><?= icon('moon') ?></span>
+          <span class="icon-dark"><?= icon('sun') ?></span>
+        </button>
+
+        <!-- Bell: shows open task count, links to cases page filtered to open tasks -->
+        <a href="<?= base_url('cases.php?status=open') ?>" class="icon-btn notif-btn" aria-label="<?= $_bell_count ?> open tasks" style="position:relative;text-decoration:none">
+          <?= icon('bell') ?>
+          <?php if ($_bell_count > 0): ?>
+            <span class="notif-badge"><?= $_bell_count > 99 ? '99+' : $_bell_count ?></span>
+          <?php endif; ?>
+        </a>
+
         <a href="<?= base_url('profile.php') ?>" class="avatar avatar-sm" style="background:<?= htmlspecialchars($current_user['avatar_color'] ?? '#3B6FE0') ?>">
           <?= htmlspecialchars(initials($current_user['full_name'] ?? $current_user['email'] ?? '?')) ?>
         </a>
@@ -96,4 +128,18 @@ $nav_items = [
     <div class="content">
       <?php $__flash = flash_get(); if ($__flash): ?>
         <div class="alert alert-<?= htmlspecialchars($__flash['type']) ?>" data-flash><?= htmlspecialchars($__flash['message']) ?></div>
+      <?php endif; ?>
+
+      <?php if (!empty($breadcrumb)): ?>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a class="bc-item" href="<?= base_url('dashboard.php') ?>"><?= icon('dashboard') ?></a>
+          <?php foreach ($breadcrumb as $i => $bc): ?>
+            <span class="bc-sep">›</span>
+            <?php if (!empty($bc['href']) && $i < count($breadcrumb) - 1): ?>
+              <a class="bc-item" href="<?= base_url($bc['href']) ?>"><?= htmlspecialchars($bc['label']) ?></a>
+            <?php else: ?>
+              <span class="bc-item bc-current"><?= htmlspecialchars($bc['label']) ?></span>
+            <?php endif; ?>
+          <?php endforeach; ?>
+        </nav>
       <?php endif; ?>

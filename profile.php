@@ -4,6 +4,9 @@ $current_user = require_login($auth);
 
 $page_title = 'Account settings';
 $active_nav = 'profile';
+$breadcrumb = [
+    ['label' => 'Account settings'],
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_valid()) {
     $form = $_POST['form'] ?? '';

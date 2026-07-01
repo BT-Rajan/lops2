@@ -217,11 +217,13 @@ CREATE TABLE `legalops_activity` (
   `id` int NOT NULL AUTO_INCREMENT,
   `uid` int DEFAULT NULL,
   `client_id` int DEFAULT NULL,
+  `case_id` int DEFAULT NULL,
   `action` varchar(60) NOT NULL,
   `description` varchar(255) NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `client_id` (`client_id`)
+  KEY `client_id` (`client_id`),
+  KEY `case_id` (`case_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
@@ -317,6 +319,27 @@ CREATE TABLE `legalops_client_documents` (
   PRIMARY KEY (`id`),
   KEY `client_id` (`client_id`),
   KEY `leadership_id` (`leadership_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Documents module: files attached to a matter. Files live on disk
+-- under uploads/cases/{case_id}/ — this table only stores metadata.
+-- Parallel in shape to legalops_client_documents above, but doc_type
+-- uses a matter-document vocabulary (see case_doc_types() in
+-- includes/case_types.php) rather than a KYC one.
+DROP TABLE IF EXISTS `legalops_case_documents`;
+CREATE TABLE `legalops_case_documents` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `case_id` int NOT NULL,
+  `doc_type` varchar(80) NOT NULL,
+  `stored_name` varchar(255) NOT NULL,
+  `original_name` varchar(255) NOT NULL,
+  `mime_type` varchar(100) DEFAULT NULL,
+  `file_size` int DEFAULT NULL,
+  `notes` varchar(255) DEFAULT NULL,
+  `uploaded_by` int DEFAULT NULL,
+  `uploaded_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `case_id` (`case_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `legalops_billing_entities`;

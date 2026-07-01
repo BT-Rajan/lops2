@@ -6,6 +6,9 @@ require_once __DIR__ . '/libs/InvoicePdf.php';
 $current_user = require_login($auth);
 $page_title = 'Billing';
 $active_nav = 'billing';
+$breadcrumb = [
+    ['label' => 'Billing'],
+];
 
 $entities = $pdo->query('SELECT * FROM legalops_billing_entities WHERE is_active = 1 ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
 $entitiesById = [];

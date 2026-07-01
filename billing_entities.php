@@ -4,6 +4,10 @@ $current_user = require_login($auth);
 
 $page_title = 'Billing entities';
 $active_nav = 'billing';
+$breadcrumb = [
+    ['label' => 'Billing', 'href' => 'billing.php'],
+    ['label' => 'Billing entities'],
+];
 
 $countries = [
     'IN' => 'India', 'AE' => 'United Arab Emirates', 'SA' => 'Saudi Arabia', 'BH' => 'Bahrain',

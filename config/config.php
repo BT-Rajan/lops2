@@ -20,3 +20,10 @@ define('APP_TIMEZONE', 'Asia/Kolkata');
 define('UPLOAD_DIR', __DIR__ . '/../uploads/clients/');
 define('UPLOAD_MAX_BYTES', 5 * 1024 * 1024); // 5MB
 define('UPLOAD_ALLOWED_EXT', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']);
+
+// --- Case (matter) document uploads -----------------------------------------
+// Same limits/extensions as client uploads, just a separate folder so the
+// two document libraries never collide on disk.
+define('CASE_UPLOAD_DIR', __DIR__ . '/../uploads/cases/');
+define('CASE_UPLOAD_MAX_BYTES', UPLOAD_MAX_BYTES);
+define('CASE_UPLOAD_ALLOWED_EXT', UPLOAD_ALLOWED_EXT);

@@ -196,6 +196,10 @@ $allLeadersForDocs = array_merge($activeLeaders, $pastLeaders);
 
 $page_title = $client['display_name'];
 $active_nav = 'clients';
+$breadcrumb = [
+    ['label' => 'Clients', 'href' => 'clients.php'],
+    ['label' => $client['display_name']],
+];
 
 require __DIR__ . '/includes/app_header.php';
 ?>

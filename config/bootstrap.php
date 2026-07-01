@@ -98,12 +98,25 @@ function redirect_if_logged_in(\PHPAuth\Auth $auth): void
     }
 }
 
-function log_activity(PDO $pdo, int $uid, string $action, string $description): void
+/**
+ * Log an activity feed entry. Pass $context to tag the entry to a
+ * client or case so client-view.php / case-view.php can show a feed
+ * scoped to just that record — e.g. log_activity($pdo, $uid, 'x', 'y',
+ * ['case_id' => $caseId]) or ['client_id' => $clientId]. Omit it for
+ * firm-wide activity not tied to either.
+ */
+function log_activity(PDO $pdo, int $uid, string $action, string $description, array $context = []): void
 {
     $stmt = $pdo->prepare(
-        'INSERT INTO legalops_activity (uid, action, description) VALUES (?, ?, ?)'
+        'INSERT INTO legalops_activity (uid, client_id, case_id, action, description) VALUES (?, ?, ?, ?, ?)'
     );
-    $stmt->execute([$uid, $action, $description]);
+    $stmt->execute([
+        $uid,
+        $context['client_id'] ?? null,
+        $context['case_id'] ?? null,
+        $action,
+        $description,
+    ]);
 }
 
 /** Two-letter initials for an avatar badge, from a full name or email. */
@@ -214,6 +227,57 @@ function handle_client_upload(PDO $pdo, int $clientId, ?int $leadershipId, strin
     $stmt->execute([
         $clientId, $leadershipId, $docType, $storedName,
         basename($file['name']), $file['type'] ?? null, $file['size'], $uploadedBy,
+    ]);
+
+    return ['ok' => true, 'message' => 'Document uploaded.', 'id' => (int)$pdo->lastInsertId()];
+}
+
+/**
+ * Validate and store an uploaded case (matter) document. Same approach
+ * as handle_client_upload() — random stored name, folder denied to
+ * direct web access, retrieval only through download.php after an
+ * auth check — just pointed at CASE_UPLOAD_DIR/{case_id}/ and
+ * legalops_case_documents instead of the client equivalents.
+ *
+ * @return array{ok: bool, message: string, id?: int}
+ */
+function handle_case_upload(PDO $pdo, int $caseId, string $docType, array $file, int $uploadedBy, ?string $notes = null): array
+{
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        return ['ok' => false, 'message' => 'Choose a file to upload.'];
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return ['ok' => false, 'message' => 'Upload failed (error code ' . $file['error'] . ').'];
+    }
+    if ($file['size'] > CASE_UPLOAD_MAX_BYTES) {
+        return ['ok' => false, 'message' => 'File is larger than the 5MB limit.'];
+    }
+
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, CASE_UPLOAD_ALLOWED_EXT, true)) {
+        return ['ok' => false, 'message' => 'That file type isn\'t allowed. Use PDF, JPG, PNG, DOC or DOCX.'];
+    }
+
+    $caseDir = rtrim(CASE_UPLOAD_DIR, '/') . '/' . $caseId;
+    if (!is_dir($caseDir) && !mkdir($caseDir, 0755, true) && !is_dir($caseDir)) {
+        return ['ok' => false, 'message' => 'Could not create the upload folder on the server.'];
+    }
+
+    $storedName = bin2hex(random_bytes(16)) . '.' . $ext;
+    $destination = $caseDir . '/' . $storedName;
+
+    if (!move_uploaded_file($file['tmp_name'], $destination)) {
+        return ['ok' => false, 'message' => 'Could not save the uploaded file.'];
+    }
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO legalops_case_documents
+         (case_id, doc_type, stored_name, original_name, mime_type, file_size, notes, uploaded_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    $stmt->execute([
+        $caseId, $docType, $storedName,
+        basename($file['name']), $file['type'] ?? null, $file['size'], $notes ?: null, $uploadedBy,
     ]);
 
     return ['ok' => true, 'message' => 'Document uploaded.', 'id' => (int)$pdo->lastInsertId()];
