@@ -15,9 +15,12 @@ define('APP_NAME', 'LegalOps');
 define('APP_VERSION', '2.0.0');
 define('APP_TIMEZONE', 'Asia/Kolkata');
 
-// URL: folder name under htdocs — no trailing slash.
-// e.g. http://localhost/lops2  → APP_BASE = '/lops2'
-define('APP_BASE', '/lops2');
+// URL: path to the public/ front-controller folder — no trailing slash.
+// The app is served from htdocs/lops2/public/, so the base path must include
+// /public (e.g. http://localhost/lops2/public/ → APP_BASE = '/lops2/public').
+// If you instead set up a VHost pointing DocumentRoot straight at public/,
+// change this to '' (empty string).
+define('APP_BASE', '/lops2/public');
 
 // File uploads — stored in storage/, served only through StorageController
 define('STORAGE_PATH', dirname(__DIR__) . '/storage/');
