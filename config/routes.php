@@ -55,10 +55,12 @@ Router::get('/calendar/connect',     'CalendarController@oauthStart');
 Router::get('/calendar/callback',    'CalendarController@oauthCallback');
 
 // ── Billing ───────────────────────────────────────────────────────────────────
-Router::get('/billing',              'BillingController@index');
-Router::post('/billing',             'BillingController@store');
-Router::get('/billing/{id}',         'BillingController@show');
-Router::post('/billing/{id}',        'BillingController@update');
+Router::get('/billing',                      'BillingController@index');
+Router::post('/billing',                     'BillingController@store');
+Router::get('/billing/entities',             'BillingEntityController@index');
+Router::post('/billing/entities',            'BillingEntityController@store');
+Router::get('/billing/invoices/{id}/items',  'BillingController@items');
+Router::get('/billing/invoices/{id}/pdf',    'BillingController@pdf');
 
 // ── Settings (admin only) ─────────────────────────────────────────────────────
 Router::get('/settings',             'SettingsController@index');
