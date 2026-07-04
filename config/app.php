@@ -15,6 +15,11 @@ define('APP_NAME', 'LegalOps');
 define('APP_VERSION', '2.0.0');
 define('APP_TIMEZONE', 'Asia/Kolkata');
 
+// Show the real exception message on the error page (local development only).
+// Set to false before this ever faces real clients — uncaught errors are
+// always logged to storage/logs/app.log either way.
+define('APP_DEBUG', true);
+
 // URL: path to the public/ front-controller folder — no trailing slash.
 // The app is served from htdocs/lops2/public/, so the base path must include
 // /public (e.g. http://localhost/lops2/public/ → APP_BASE = '/lops2/public').

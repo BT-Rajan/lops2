@@ -1,5 +1,5 @@
 -- =====================================================================
--- Migration 003 — Documents module (case-linked document storage).
+-- Migration 004 — Documents module (case-linked document storage).
 --
 -- Already imported sql/legalops.sql or earlier migrations? Run THIS
 -- file instead of re-importing the whole thing — it only adds what's

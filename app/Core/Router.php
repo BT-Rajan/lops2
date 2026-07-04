@@ -44,8 +44,6 @@ class Router
         }
 
         // 404
-        http_response_code(404);
-        $title = '404 — Page not found';
-        include dirname(__DIR__, 2) . '/resources/views/layouts/error.php';
+        render_error_page(404, 'The page you requested doesn\'t exist. Double-check the link, or head back to the dashboard.');
     }
 }

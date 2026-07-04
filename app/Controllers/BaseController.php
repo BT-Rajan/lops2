@@ -82,15 +82,7 @@ abstract class BaseController
 
     protected function abort(int $status, string $message = ''): never
     {
-        http_response_code($status);
-        $title = match ($status) {
-            403 => '403 — Access denied',
-            404 => '404 — Not found',
-            default => $status . ' — Error',
-        };
-        $content = "<h1>{$title}</h1><p>" . htmlspecialchars($message) . "</p>";
-        View::render('layouts/error', ['title' => $title, 'content' => $content], null);
-        exit;
+        render_error_page($status, $message);
     }
 
     // ── Shared view data injected into every app layout ───────────────────────

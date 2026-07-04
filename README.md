@@ -1,7 +1,7 @@
 # LegalOps 2 (lops2)
 
 Enterprise-grade legal practice management system for Indian law firms.
-PHP 8 · MySQL · PHPAuth · No Composer required.
+PHP 8 · MySQL · PHPAuth · No Composer required (one optional exception — see Notes).
 
 ---
 
@@ -123,7 +123,10 @@ in Google or Outlook import back as tasks.
 
 ## Notes
 
-- No Composer. PHPAuth is vendored in `libs/` directly.
+- No Composer. PHPAuth is vendored in `libs/` directly. The one exception:
+  invoice PDF downloads (`/billing/invoices/{id}/pdf`) use dompdf, installed
+  separately with `composer require dompdf/dompdf` — see `INVOICING.md`.
+  Everything else, including creating and issuing invoices, works without it.
 - Sessions over cookies (set `uses_session = 1` in `phpauth_config`). Avoids the
   Apache subfolder cookie-path issues that show up on XAMPP/Windows. Flip if needed.
 - `cookie_secure = 0` for plain `http://localhost`. Set to `1` behind HTTPS.

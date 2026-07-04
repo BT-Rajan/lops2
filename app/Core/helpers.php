@@ -149,6 +149,33 @@ function fmt_size(int $bytes): string
     return round($bytes / 1048576, 1) . ' MB';
 }
 
+// ── Error pages ───────────────────────────────────────────────────────────────
+
+/**
+ * Render the shared ⚖ error page with a status-appropriate title and the
+ * given message, then stop. Used by Router::dispatch()'s 404 fallback,
+ * BaseController::abort(), and the global exception handler below —
+ * previously each of these built the page slightly differently, and the
+ * Router's 404 branch forgot to set $content at all (it always fell back
+ * to the layout's generic "Something went wrong" text, even for a plain
+ * page-not-found).
+ */
+function render_error_page(int $status, string $message = ''): never
+{
+    if (!headers_sent()) {
+        http_response_code($status);
+    }
+    $title = match ($status) {
+        403 => '403 — Access denied',
+        404 => '404 — Page not found',
+        default => $status . ' — Something went wrong',
+    };
+    $content = '<h1>' . htmlspecialchars($title) . '</h1>'
+        . ($message !== '' ? '<p>' . htmlspecialchars($message) . '</p>' : '');
+    require LOPS2_ROOT . '/resources/views/layouts/error.php';
+    exit;
+}
+
 // ── Activity log ──────────────────────────────────────────────────────────────
 
 function log_activity(PDO $pdo, int $uid, string $action, string $description, array $ctx = []): void
