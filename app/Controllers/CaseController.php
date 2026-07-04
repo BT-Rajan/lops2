@@ -36,15 +36,12 @@ class CaseController extends BaseController
         $stmt = $this->pdo->prepare($sql); $stmt->execute($params);
         $cases = $stmt->fetchAll();
 
-        $openCases = $this->pdo->query("SELECT * FROM legalops_cases WHERE status != 'closed' ORDER BY case_number")->fetchAll();
-
         $this->view('cases/index', [
             'pageTitle'     => 'Cases',
             'activeNav'     => 'cases',
             'cases'         => $cases,
             'statusFilter'  => $statusFilter,
             'search'        => $search,
-            'openCases'     => $openCases,
         ]);
     }
 
@@ -198,6 +195,23 @@ class CaseController extends BaseController
 
         if (!$other) { flash('error', "No matter found with number \"{$otherNumber}\"."); return; }
         if ((int)$other['id'] === $case['id']) { flash('error', 'A matter cannot be linked to itself.'); return; }
+
+        // "Connected" is a symmetric relationship — A linked to B is the same
+        // fact as B linked to A. The DB unique key only blocks an exact
+        // (case_id, linked_case_id) repeat, not the reverse pairing, so check
+        // for that here or the same link ends up listed twice on both sides.
+        if ($linkType === 'connected') {
+            $dupe = $this->pdo->prepare(
+                "SELECT 1 FROM legalops_case_links
+                 WHERE link_type='connected'
+                   AND ((case_id=? AND linked_case_id=?) OR (case_id=? AND linked_case_id=?))"
+            );
+            $dupe->execute([$case['id'], $other['id'], $other['id'], $case['id']]);
+            if ($dupe->fetch()) {
+                flash('error', 'That link already exists.');
+                return;
+            }
+        }
 
         try {
             $this->pdo->prepare('INSERT INTO legalops_case_links (case_id,linked_case_id,link_type,created_by) VALUES (?,?,?,?)')
