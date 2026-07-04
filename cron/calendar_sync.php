@@ -1,44 +1,38 @@
 <?php
 /**
- * Background calendar sync cron — runs sync_account() for every active
- * connected Google/Microsoft calendar account, so two-way sync happens
- * on a schedule rather than only when a user clicks "Sync now" on the
- * Calendar page.
+ * lops2 — background calendar sync cron.
+ * Runs two-way sync for every active connected Google/Microsoft account.
  *
- * Suggested: every 10-15 minutes via Windows Task Scheduler / cron:
- *   "C:\xampp\php\php.exe" "C:\xampp\htdocs\legalops\cron\calendar_sync.php"
- *
- * CLI-only, same reasoning as hearing_reminders.php.
+ * Schedule every 10-15 minutes:
+ *   php /path/to/lops2/cron/calendar_sync.php
  */
 
 if (PHP_SAPI !== 'cli') {
     http_response_code(403);
-    exit("This script is for command-line / scheduled task use only.\n");
+    exit("CLI only.\n");
 }
 
-require_once __DIR__ . '/../config/bootstrap.php';
-require_once __DIR__ . '/../libs/calendar_sync.php';
+define('LOPS2_ROOT', dirname(__DIR__));
+require LOPS2_ROOT . '/config/bootstrap.php';
+require LOPS2_ROOT . '/libs/calendar_sync.php';
 
 echo "[" . date('Y-m-d H:i:s') . "] Calendar sync cron starting\n";
 
-$stmt = $pdo->query("SELECT * FROM legalops_calendar_accounts WHERE is_active = 1");
-$accounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$accounts = $pdo->query("SELECT * FROM legalops_calendar_accounts WHERE is_active = 1")->fetchAll();
 
 if (!$accounts) {
-    echo "  No connected calendar accounts. Nothing to do.\n";
+    echo "  No connected calendar accounts. Done.\n";
     exit(0);
 }
 
 foreach ($accounts as $account) {
-    $label = $account['provider'] . ' (uid ' . $account['uid'] . ')';
+    $label  = $account['provider'] . ' (uid ' . $account['uid'] . ')';
     $result = sync_account($pdo, $account);
-
     if ($result['ok']) {
         echo "  {$label}: pushed {$result['pushed']}, imported {$result['imported']}, updated {$result['updated']}.\n";
     } else {
-        $err = $result['error'] ?: ($result['push_errors'] . ' push error(s)');
-        echo "  {$label}: sync had issues — {$err}\n";
+        echo "  {$label}: error — " . ($result['error'] ?: $result['push_errors'] . ' push error(s)') . "\n";
     }
 }
 
-echo "[" . date('Y-m-d H:i:s') . "] Calendar sync cron done.\n";
+echo "[" . date('Y-m-d H:i:s') . "] Done.\n";

@@ -1,4 +1,18 @@
-*.log
+# Uploaded files — stored content, not code
+storage/uploads/clients/*
+storage/uploads/cases/*
+!storage/uploads/clients/.gitkeep
+!storage/uploads/cases/.gitkeep
+
+# Logs
+storage/logs/*.log
+
+# Vendor (PHPAuth is vendored in libs/ intentionally with no Composer)
+vendor/
+
+# OS / editor junk
 .DS_Store
-/vendor/*
-!/vendor/.htaccess
+Thumbs.db
+*.swp
+.idea/
+.vscode/
