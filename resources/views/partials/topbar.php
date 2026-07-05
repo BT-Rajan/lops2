@@ -10,11 +10,14 @@
   </form>
 
   <div class="topbar-actions">
-    <button class="icon-btn" data-theme-toggle aria-label="Toggle theme"><?= icon('sun') ?></button>
-    <a class="icon-btn" href="<?= url('tasks?status=pending') ?>" aria-label="Open tasks" style="position:relative">
+    <button class="icon-btn theme-toggle-btn" data-theme-toggle aria-label="Toggle theme">
+      <span class="icon-light"><?= icon('sun') ?></span>
+      <span class="icon-dark"><?= icon('moon') ?></span>
+    </button>
+    <a class="icon-btn notif-btn" href="<?= url('tasks?status=pending') ?>" aria-label="<?= ($bellCount ?? 0) > 0 ? $bellCount . ' open tasks' : 'Open tasks' ?>">
       <?= icon('bell') ?>
       <?php if (($bellCount ?? 0) > 0): ?>
-        <span style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--danger);border:2px solid var(--surface-topbar)"></span>
+        <span class="notif-badge"><?= $bellCount > 9 ? '9+' : $bellCount ?></span>
       <?php endif; ?>
     </a>
     <a href="<?= url('profile') ?>" class="avatar avatar-sm" style="background:<?= htmlspecialchars($currentUser['avatar_color'] ?? '#3B6FE0') ?>">
