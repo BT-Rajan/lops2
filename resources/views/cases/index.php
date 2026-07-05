@@ -114,10 +114,24 @@ function render_intel_fieldset(string $prefix, array $courtTypes, array $caseSta
         <label>Matter title</label>
         <input class="input" type="text" name="title" id="f-title" placeholder="Short descriptive title" required>
       </div>
-      <div class="field">
-        <label>Client name</label>
-        <input class="input" type="text" name="client_name" id="f-client_name" placeholder="Client or company name" required>
+      <div class="input-row">
+        <div class="field">
+          <label>Linked client (optional)</label>
+          <select class="input" name="client_id" id="f-client_id">
+            <option value="">— Not linked (type a name below) —</option>
+            <?php foreach ($clients as $cl): ?>
+              <option value="<?= (int)$cl['id'] ?>" data-name="<?= htmlspecialchars($cl['display_name']) ?>"><?= htmlspecialchars($cl['display_name']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="field">
+          <label>Client name</label>
+          <input class="input" type="text" name="client_name" id="f-client_name" placeholder="Client or company name" required>
+        </div>
       </div>
+      <?php if (!$clients): ?>
+        <div class="small muted" style="margin-top:-8px;margin-bottom:14px">No client records yet — <a href="<?= url('clients') ?>">add one</a> to link matters to KYC'd clients instead of a free-text name.</div>
+      <?php endif; ?>
       <div class="input-row">
         <div class="field">
           <label>Status</label>
@@ -182,7 +196,13 @@ function render_intel_fieldset(string $prefix, array $courtTypes, array $caseSta
             <div class="case-number" style="color:var(--text-muted)"><?= htmlspecialchars(implode(' · ', array_filter([$c['court_name'], $c['case_stage']]))) ?></div>
           <?php endif; ?>
         </td>
-        <td class="case-client" onclick="window.location='<?= url('cases/' . $c['id']) ?>'" style="cursor:pointer"><?= htmlspecialchars($c['client_name']) ?></td>
+        <td class="case-client">
+          <?php if ($c['client_id']): ?>
+            <a href="<?= url('clients/' . (int)$c['client_id']) ?>" style="color:inherit;text-decoration:underline;text-decoration-color:var(--border-card)"><?= htmlspecialchars($c['client_name']) ?></a>
+          <?php else: ?>
+            <span onclick="window.location='<?= url('cases/' . $c['id']) ?>'" style="cursor:pointer"><?= htmlspecialchars($c['client_name']) ?></span>
+          <?php endif; ?>
+        </td>
         <td class="case-client"><?= htmlspecialchars($c['practice_area'] ?: '—') ?></td>
         <td><span class="badge badge-<?= $c['status'] ?>"><?= $c['status'] ?></span></td>
         <td><span class="badge badge-<?= $c['priority'] ?>"><?= $c['priority'] ?></span></td>
@@ -231,7 +251,18 @@ function render_intel_fieldset(string $prefix, array $courtTypes, array $caseSta
         </div>
       </div>
       <div class="field"><label>Matter title</label><input class="input" type="text" name="title" id="ef-title" required></div>
-      <div class="field"><label>Client name</label><input class="input" type="text" name="client_name" id="ef-client_name" required></div>
+      <div class="input-row">
+        <div class="field">
+          <label>Linked client (optional)</label>
+          <select class="input" name="client_id" id="ef-client_id">
+            <option value="">— Not linked (type a name below) —</option>
+            <?php foreach ($clients as $cl): ?>
+              <option value="<?= (int)$cl['id'] ?>" data-name="<?= htmlspecialchars($cl['display_name']) ?>"><?= htmlspecialchars($cl['display_name']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="field"><label>Client name</label><input class="input" type="text" name="client_name" id="ef-client_name" required></div>
+      </div>
       <div class="input-row">
         <div class="field">
           <label>Status</label>
@@ -283,12 +314,26 @@ function render_intel_fieldset(string $prefix, array $courtTypes, array $caseSta
   document.getElementById('case-edit-close').addEventListener('click', closeEdit);
   document.getElementById('case-edit-cancel').addEventListener('click', closeEdit);
 
+  // Selecting a client auto-fills + locks the free-text name so it can never
+  // drift from the actual client record; "Not linked" hands control back.
+  function wireClientPicker(selectId, nameId) {
+    var sel = document.getElementById(selectId), nameInput = document.getElementById(nameId);
+    if (!sel || !nameInput) return;
+    sel.addEventListener('change', function () {
+      var opt = sel.options[sel.selectedIndex];
+      if (opt.value) { nameInput.value = opt.dataset.name; nameInput.readOnly = true; }
+      else { nameInput.readOnly = false; }
+    });
+  }
+  wireClientPicker('f-client_id', 'f-client_name');
+  wireClientPicker('ef-client_id', 'ef-client_name');
+
   document.querySelectorAll('.case-edit-btn').forEach(function(btn){
     btn.addEventListener('click',function(){
       var c = JSON.parse(btn.getAttribute('data-case'));
       editForm.action = '<?= url('cases/') ?>' + c.id;
       [
-        'case_number','title','client_name','practice_area','status','priority','opened_on','due_on','next_hearing_date','next_hearing_time',
+        'case_number','title','client_id','client_name','practice_area','status','priority','opened_on','due_on','next_hearing_date','next_hearing_time',
         'court_type','court_name','bench','court_hall','judge_name','jurisdiction','opposite_counsel','case_stage',
         'police_station','fir_number','crime_number','acts_involved','sections_involved','prayer','reliefs_sought',
         'limitation_date','filing_date','service_date','disposal_date','next_hearing_purpose','result',
@@ -296,6 +341,7 @@ function render_intel_fieldset(string $prefix, array $courtTypes, array $caseSta
         var el = document.getElementById('ef-'+f);
         if(el) el.value = c[f] || '';
       });
+      document.getElementById('ef-client_name').readOnly = !!c.client_id;
       var hasIntel = ['court_type','court_name','judge_name','case_stage','acts_involved','fir_number','result'].some(function(f){ return c[f]; });
       var details = editPanel.querySelector('.disclosure');
       if (details) details.open = hasIntel;

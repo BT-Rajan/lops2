@@ -36,10 +36,13 @@ class CaseController extends BaseController
         $stmt = $this->pdo->prepare($sql); $stmt->execute($params);
         $cases = $stmt->fetchAll();
 
+        $clients = $this->pdo->query('SELECT id, display_name, entity_type FROM legalops_clients ORDER BY display_name')->fetchAll();
+
         $this->view('cases/index', [
             'pageTitle'     => 'Cases',
             'activeNav'     => 'cases',
             'cases'         => $cases,
+            'clients'       => $clients,
             'statusFilter'  => $statusFilter,
             'search'        => $search,
         ]);
@@ -91,10 +94,23 @@ class CaseController extends BaseController
 
         $links = $this->fetchLinks($case['id']);
 
+        $client = null;
+        if ($case['client_id']) {
+            $stmt = $this->pdo->prepare(
+                'SELECT c.*, (SELECT COUNT(*) FROM legalops_client_documents WHERE client_id=c.id) AS doc_count
+                 FROM legalops_clients c WHERE c.id = ?'
+            );
+            $stmt->execute([$case['client_id']]);
+            $client = $stmt->fetch() ?: null;
+        }
+        $clients = $this->pdo->query('SELECT id, display_name FROM legalops_clients ORDER BY display_name')->fetchAll();
+
         $this->view('cases/show', [
             'pageTitle' => $case['case_number'] . ' — ' . $case['title'],
             'activeNav' => 'cases',
             'case'      => $case,
+            'client'    => $client,
+            'clients'   => $clients,
             'docs'      => $docs,
             'tasks'     => $tasks,
             'activity'  => $activity,
@@ -273,10 +289,27 @@ class CaseController extends BaseController
     {
         $caseNumber  = trim($_POST['case_number'] ?? '');
         $title       = trim($_POST['title'] ?? '');
+        $clientId    = (int)($_POST['client_id'] ?? 0);
         $client      = trim($_POST['client_name'] ?? '');
         $area        = trim($_POST['practice_area'] ?? '');
         $status      = $this->postEnum('status', self::STATUSES, 'open');
         $priority    = $this->postEnum('priority', self::PRIORITIES, 'medium');
+
+        if ($clientId > 0) {
+            $stmt = $this->pdo->prepare('SELECT display_name FROM legalops_clients WHERE id = ?');
+            $stmt->execute([$clientId]);
+            $linkedName = $stmt->fetchColumn();
+            if ($linkedName === false) {
+                return ['error' => 'The selected client record could not be found.', 'data' => []];
+            }
+            // Linked matters always display the client's real name — never
+            // a stale or hand-edited copy of it — so the link actually
+            // means something instead of being a decoration next to a
+            // free-text field nobody keeps in sync.
+            $client = $linkedName;
+        } else {
+            $clientId = null;
+        }
 
         if (!$caseNumber || !$title || !$client) {
             return ['error' => 'Matter number, title and client are required.', 'data' => []];
@@ -286,6 +319,7 @@ class CaseController extends BaseController
             'case_number'   => $caseNumber,
             'title'         => $title,
             'client_name'   => $client,
+            'client_id'     => $clientId,
             'practice_area' => $area ?: null,
             'status'        => $status,
             'priority'      => $priority,

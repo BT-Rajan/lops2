@@ -102,6 +102,12 @@ class ClientController extends BaseController
         $stmt = $this->pdo->prepare('SELECT d.*,l.role AS leader_role,l.full_name AS leader_name FROM legalops_client_documents d LEFT JOIN legalops_client_leadership l ON l.id=d.leadership_id WHERE d.client_id=? ORDER BY d.uploaded_at DESC');
         $stmt->execute([$id]); $documents = $stmt->fetchAll();
 
+        $stmt = $this->pdo->prepare(
+            'SELECT c.*, (SELECT COUNT(*) FROM legalops_case_documents WHERE case_id=c.id) AS doc_count
+             FROM legalops_cases c WHERE c.client_id = ? ORDER BY c.created_at DESC'
+        );
+        $stmt->execute([$id]); $matters = $stmt->fetchAll();
+
         $this->view('clients/show', [
             'pageTitle'     => $client['display_name'],
             'activeNav'     => 'clients',
@@ -111,6 +117,7 @@ class ClientController extends BaseController
             'pastLeaders'   => $pastLeaders,
             'contacts'      => $contacts,
             'documents'     => $documents,
+            'matters'       => $matters,
             'allLeaders'    => array_merge($activeLeaders, $pastLeaders),
             'docTypes'      => client_doc_types(),
         ]);
@@ -224,6 +231,10 @@ class ClientController extends BaseController
         foreach (['legalops_client_documents', 'legalops_client_contacts', 'legalops_client_leadership'] as $t) {
             $this->pdo->prepare("DELETE FROM {$t} WHERE client_id=?")->execute([$id]);
         }
+        // Matters are NOT deleted — only unlinked. client_name (already a
+        // plain copy of the client's name at link time) stays exactly as
+        // it was, so the matter's history doesn't silently lose its client.
+        $this->pdo->prepare('UPDATE legalops_cases SET client_id = NULL WHERE client_id = ?')->execute([$id]);
         $this->pdo->prepare('DELETE FROM legalops_clients WHERE id=?')->execute([$id]);
         log_activity($this->pdo, (int)$user['uid'], 'client_deleted', 'Removed client — ' . $client['display_name']);
         flash('success', 'Client removed.');

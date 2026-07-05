@@ -141,6 +141,7 @@ CREATE TABLE `legalops_cases` (
   `case_number` varchar(30) NOT NULL,
   `title` varchar(200) NOT NULL,
   `client_name` varchar(150) NOT NULL,
+  `client_id` int DEFAULT NULL COMMENT 'Links to legalops_clients when the client has a formal record. Nullable — ad-hoc/prospective matters can still just carry a free-text client_name.',
   `practice_area` varchar(100) DEFAULT NULL,
   `court_type` varchar(60) DEFAULT NULL COMMENT 'Supreme Court, High Court, District Court, Tribunal, etc.',
   `court_name` varchar(150) DEFAULT NULL,
@@ -172,7 +173,8 @@ CREATE TABLE `legalops_cases` (
   `created_by` int DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `case_number` (`case_number`)
+  UNIQUE KEY `case_number` (`case_number`),
+  KEY `client_id` (`client_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Connected matters and appeal chains. 'connected' is a symmetric
@@ -502,6 +504,13 @@ INSERT INTO `legalops_clients`
   '56 Anna Salai', NULL, 'Chennai', 'Tamil Nadu', '600002', 'active', 'verified', 1),
 (6, 'trust', 'Meridian Capital Charitable Trust', 'AAATM7890P', 'TN/TRUST/2018/1123', 'trustoffice@meridiancapital.in', '+91 44 6789 0123',
   '101 Apex Towers, OMR', NULL, 'Chennai', 'Tamil Nadu', '600096', 'draft', 'pending', 1);
+
+-- Link the seeded matters to their matching client records. Two are left
+-- unlinked on purpose: "Subramaniam Family" (case) vs "Subramaniam Family
+-- (HUF)" (client) is a near-miss a person should confirm by hand, and
+-- "Meridian Capital Partners" (case) is a different entity entirely from
+-- "Meridian Capital Charitable Trust" (client) despite the similar name.
+UPDATE `legalops_cases` c JOIN `legalops_clients` cl ON cl.display_name = c.client_name SET c.client_id = cl.id;
 
 INSERT INTO `legalops_client_leadership`
   (`client_id`, `role`, `full_name`, `pan`, `id_proof_type`, `id_proof_number`, `din_or_membership_no`, `email`, `phone`, `kyc_verified`, `status`, `effective_from`, `effective_to`) VALUES

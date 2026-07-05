@@ -123,6 +123,34 @@
 
   <div style="display:flex;flex-direction:column;gap:20px">
 
+    <!-- Matters -->
+    <div class="card card-pad">
+      <div class="card-head"><h3>Matters</h3><a class="link" href="<?= url('cases') ?>">All matters →</a></div>
+      <?php if ($matters): ?>
+        <table class="table">
+          <thead><tr><th>Matter</th><th>Status</th><th>Docs</th></tr></thead>
+          <tbody>
+            <?php foreach ($matters as $m): ?>
+              <tr>
+                <td>
+                  <a class="link case-title" href="<?= url('cases/' . $m['id']) ?>"><?= htmlspecialchars($m['case_number']) ?></a>
+                  <div class="case-client"><?= htmlspecialchars($m['title']) ?></div>
+                </td>
+                <td><span class="badge badge-<?= $m['status'] ?>"><?= $m['status'] ?></span></td>
+                <td class="case-client">
+                  <a href="<?= url('cases/' . $m['id'] . '#documents') ?>" style="display:inline-flex;align-items:center;gap:4px;color:inherit">
+                    <?= icon('documents') ?> <?= (int)($m['doc_count'] ?? 0) ?>
+                  </a>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php else: ?>
+        <div class="empty-state"><p>No matters linked to this client yet.</p></div>
+      <?php endif; ?>
+    </div>
+
     <!-- Onboarding / KYC -->
     <div class="card card-pad">
       <div class="card-head"><h3>Onboarding &amp; KYC</h3></div>
@@ -161,7 +189,7 @@
     <!-- Danger zone -->
     <div class="card card-pad" style="border-color:rgba(193,59,59,.25)">
       <div class="card-head"><h3 style="color:var(--danger)">Remove client</h3></div>
-      <p class="case-client" style="margin-bottom:14px">Permanently deletes this client, all KYC records, contacts, and uploaded documents.</p>
+      <p class="case-client" style="margin-bottom:14px">Permanently deletes this client, all KYC records, contacts, and uploaded documents. Any linked matters are kept — they'll just lose the link.</p>
       <form method="post" action="<?= url('clients/'.$client['id'].'/delete') ?>" onsubmit="return confirm('Permanently delete this client and all related records?')">
         <?= csrf_field() ?><button class="btn btn-ghost" style="border-color:var(--danger);color:var(--danger)">Delete client</button>
       </form>

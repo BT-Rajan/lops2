@@ -39,7 +39,21 @@ $hasIntel   = (bool)array_filter([
         <div class="field"><label>Practice area</label><input class="input" type="text" name="practice_area" value="<?= htmlspecialchars($case['practice_area'] ?? '') ?>"></div>
       </div>
       <div class="field"><label>Title</label><input class="input" type="text" name="title" value="<?= htmlspecialchars($case['title']) ?>" required></div>
-      <div class="field"><label>Client name</label><input class="input" type="text" name="client_name" value="<?= htmlspecialchars($case['client_name']) ?>" required></div>
+      <div class="input-row">
+        <div class="field">
+          <label>Linked client (optional)</label>
+          <select class="input" name="client_id" id="edit-client_id">
+            <option value="">— Not linked (type a name below) —</option>
+            <?php foreach ($clients as $cl): ?>
+              <option value="<?= (int)$cl['id'] ?>" data-name="<?= htmlspecialchars($cl['display_name']) ?>" <?= (int)($case['client_id'] ?? 0) === (int)$cl['id'] ? 'selected' : '' ?>><?= htmlspecialchars($cl['display_name']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="field">
+          <label>Client name</label>
+          <input class="input" type="text" name="client_name" id="edit-client_name" value="<?= htmlspecialchars($case['client_name']) ?>" <?= $case['client_id'] ? 'readonly' : '' ?> required>
+        </div>
+      </div>
       <div class="input-row">
         <div class="field"><label>Status</label><select class="input" name="status"><?php foreach (['open','pending','closed'] as $s): ?><option value="<?= $s ?>" <?= $case['status']===$s?'selected':'' ?>><?= ucfirst($s) ?></option><?php endforeach; ?></select></div>
         <div class="field"><label>Priority</label><select class="input" name="priority"><?php foreach (['low','medium','high'] as $p): ?><option value="<?= $p ?>" <?= $case['priority']===$p?'selected':'' ?>><?= ucfirst($p) ?></option><?php endforeach; ?></select></div>
@@ -221,6 +235,31 @@ $hasIntel   = (bool)array_filter([
 
   <div style="display:flex;flex-direction:column;gap:20px">
 
+    <!-- Client -->
+    <div class="card card-pad">
+      <div class="card-head"><h3>Client</h3></div>
+      <?php if ($client): ?>
+        <?php require_once dirname(__DIR__, 3) . '/libs/client_types.php'; $cMeta = client_type_meta($client['entity_type']); ?>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div>
+            <div class="case-title"><a class="link" href="<?= url('clients/' . $client['id']) ?>"><?= htmlspecialchars($client['display_name']) ?></a></div>
+            <div class="case-client"><?= htmlspecialchars($cMeta['label']) ?></div>
+          </div>
+          <div style="text-align:right;white-space:nowrap">
+            <span class="badge badge-onboard-<?= $client['onboarding_status'] ?>"><?= str_replace('_', ' ', $client['onboarding_status']) ?></span><br>
+            <span class="badge badge-kyc-<?= $client['kyc_status'] ?>" style="margin-top:4px;display:inline-block">KYC <?= $client['kyc_status'] ?></span>
+          </div>
+        </div>
+        <div class="case-client" style="margin-top:10px"><?= htmlspecialchars($client['email'] ?: $client['phone'] ?: '—') ?></div>
+        <a class="link" style="display:inline-flex;align-items:center;gap:4px;margin-top:10px" href="<?= url('clients/' . $client['id'] . '#documents') ?>">
+          <?= icon('documents') ?> <?= (int)$client['doc_count'] ?> client document<?= (int)$client['doc_count'] === 1 ? '' : 's' ?> on file →
+        </a>
+      <?php else: ?>
+        <p class="case-client" style="margin-bottom:10px"><?= htmlspecialchars($case['client_name']) ?> isn't linked to a client record — their KYC and other matters won't show here.</p>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('edit-toggle').click()"><?= icon('edit') ?> Link a client</button>
+      <?php endif; ?>
+    </div>
+
     <!-- Tasks -->
     <div class="card card-pad">
       <div class="card-head"><h3>Linked tasks</h3><a class="link" href="<?= url('tasks') ?>">All tasks →</a></div>
@@ -329,6 +368,15 @@ $hasIntel   = (bool)array_filter([
   var panel = document.getElementById('edit-panel');
   document.getElementById('edit-toggle').addEventListener('click',function(){ panel.classList.toggle('open'); if(panel.classList.contains('open')) panel.scrollIntoView({behavior:'smooth',block:'start'}); });
   document.getElementById('edit-cancel').addEventListener('click',function(){ panel.classList.remove('open'); });
+
+  (function () {
+    var sel = document.getElementById('edit-client_id'), nameInput = document.getElementById('edit-client_name');
+    sel.addEventListener('change', function () {
+      var opt = sel.options[sel.selectedIndex];
+      if (opt.value) { nameInput.value = opt.dataset.name; nameInput.readOnly = true; }
+      else { nameInput.readOnly = false; }
+    });
+  })();
   document.getElementById('edit-close').addEventListener('click',function(){ panel.classList.remove('open'); });
 })();
 </script>
