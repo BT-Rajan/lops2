@@ -9,17 +9,10 @@
     <div class="card card-pad">
       <div class="card-head"><h3>Court hearing reminders</h3></div>
       <p class="case-client" style="margin-bottom:14px">How far ahead should the nightly cron create a reminder task before a hearing?</p>
-      <form method="post" action="<?= url('settings') ?>">
+      <form method="post" action="<?= url('settings') ?>" style="display:flex;flex-wrap:wrap;gap:8px">
         <?= csrf_field() ?><input type="hidden" name="_form" value="hearing">
-        <div class="input-row" style="margin-bottom:16px">
-          <label style="display:flex;align-items:center;gap:8px;font-weight:500;flex:1;border:1.5px solid var(--line);border-radius:8px;padding:11px 14px;cursor:pointer">
-            <input type="radio" name="hearing_reminder_offset_days" value="1" <?= $offset===1?'checked':'' ?>> Tomorrow <span style="color:var(--text-muted);font-weight:400">(1 day before)</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-weight:500;flex:1;border:1.5px solid var(--line);border-radius:8px;padding:11px 14px;cursor:pointer">
-            <input type="radio" name="hearing_reminder_offset_days" value="2" <?= $offset===2?'checked':'' ?>> Day after tomorrow <span style="color:var(--text-muted);font-weight:400">(2 days before)</span>
-          </label>
-        </div>
-        <button class="btn btn-primary" type="submit">Save</button>
+        <button type="submit" name="hearing_reminder_offset_days" value="1" class="filter-chip <?= $offset === 1 ? 'active' : '' ?>">Tomorrow <span style="font-weight:400">(1 day before)</span></button>
+        <button type="submit" name="hearing_reminder_offset_days" value="2" class="filter-chip <?= $offset === 2 ? 'active' : '' ?>">Day after tomorrow <span style="font-weight:400">(2 days before)</span></button>
       </form>
       <div class="alert alert-info" style="margin-top:14px;margin-bottom:0">
         Schedule <code>cron/hearing_reminders.php</code> daily and <code>cron/calendar_sync.php</code> every 10–15 min.
@@ -39,7 +32,7 @@
             <td>
               <form method="post" action="<?= url('settings') ?>">
                 <?= csrf_field() ?><input type="hidden" name="_form" value="role"><input type="hidden" name="user_id" value="<?= $t['id'] ?>">
-                <select class="input" name="role" style="padding:6px 10px;font-size:12.5px" onchange="this.form.submit()" <?= (int)$t['id']===(int)$currentUser['uid']?'disabled':'' ?>>
+                <select class="input" name="role" onchange="this.form.submit()" <?= (int)$t['id']===(int)$currentUser['uid']?'disabled':'' ?>>
                   <option value="member" <?= $t['role']==='member'?'selected':'' ?>>Member</option>
                   <option value="admin" <?= $t['role']==='admin'?'selected':'' ?>>Admin</option>
                 </select>
