@@ -12,7 +12,7 @@ require_once dirname(__DIR__, 3) . '/libs/icons.php';
 <script>window.APP_BASE = <?= json_encode(url('')) ?>;</script>
 </head>
 <body>
-<div class="scrim" data-menu-toggle></div>
+<div class="scrim"></div>
 <div class="app-shell">
 
 <?php \Lops2\Core\View::partial('nav', ['currentUser' => $currentUser, 'activeNav' => $activeNav ?? '', 'bellCount' => $bellCount ?? 0]) ?>
