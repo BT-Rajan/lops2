@@ -98,6 +98,17 @@ class AuthController extends BaseController
             return;
         }
 
+        // The very first account on a fresh install becomes admin — otherwise
+        // nobody could ever administer the firm, since only admins can change
+        // roles and there'd be no admin yet to grant one. Mirrors the one-time
+        // bootstrap in database/migrations/003_tasks_calendar_module.sql, but
+        // at registration time so it also covers a fresh schema-only install
+        // (no seed data) going through /register instead of a migration.
+        $noAdminYet = (int)$this->pdo->query("SELECT COUNT(*) FROM phpauth_users WHERE role = 'admin'")->fetchColumn() === 0;
+        if ($noAdminYet) {
+            $this->pdo->prepare('UPDATE phpauth_users SET role = ? WHERE id = ?')->execute(['admin', (int)$result['uid']]);
+        }
+
         log_activity($this->pdo, (int)$result['uid'], 'account_created', 'Created account');
         flash('success', 'Account created — sign in to continue.');
         $this->redirect('login');

@@ -1,7 +1,19 @@
 -- =====================================================================
--- LegalOps — database schema
--- Import this whole file into a database named `lops2` (or your
--- own name — just update config/config.php to match).
+-- LegalOps — database schema (structure only, no data)
+--
+-- This file creates every table LegalOps needs and nothing else — no
+-- demo user, no sample cases/clients/invoices. After importing this,
+-- register your first account at /register and you have a genuinely
+-- empty, production-shaped database.
+--
+-- Recommended: run `php database/install.php` instead of importing
+-- this by hand — it creates the database if missing and runs this file
+-- for you. Prefer raw SQL? `mysql -u root lops2 < database/schema.sql`
+-- works the same as it always has.
+--
+-- Want realistic data to click around and test every status/condition
+-- with? Run `php database/seed_demo.php` after this.
+--
 -- Built for MySQL / MariaDB on XAMPP.
 -- =====================================================================
 
@@ -456,95 +468,5 @@ CREATE TABLE `legalops_invoice_items` (
   PRIMARY KEY (`id`),
   KEY `invoice_id` (`invoice_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- Demo data — lets you log in immediately without registering first.
--- Email:    demo@legalops.local
--- Password: LegalOps@123
--- ---------------------------------------------------------------------
-
-INSERT INTO `phpauth_users` (`email`, `password`, `isactive`, `full_name`, `job_title`, `avatar_color`, `role`) VALUES
-('demo@legalops.local', '$2b$10$K0Apvp0t19nqq2bBUtbs/.EbxuJDXMzywvt.mUSIDYbAlG5fMVs5S', 1, 'Aishwarya Krishnan', 'Managing Partner', '#3B6FE0', 'admin');
-
-INSERT INTO `legalops_cases` (`case_number`, `title`, `client_name`, `practice_area`, `status`, `priority`, `opened_on`, `due_on`, `next_hearing_date`, `created_by`) VALUES
-('LO-2026-014', 'Sundaram Textiles — Commercial Lease Renewal', 'Sundaram Textiles Pvt Ltd', 'Real Estate', 'open', 'high', '2026-04-02', '2026-07-10', NULL, 1),
-('LO-2026-021', 'Krishnan vs. Coastal Logistics', 'R. Krishnan', 'Civil Litigation', 'open', 'medium', '2026-05-11', '2026-08-01', '2026-07-08', 1),
-('LO-2026-009', 'Velan Foods — Trademark Opposition', 'Velan Foods Ltd', 'Intellectual Property', 'pending', 'high', '2026-03-18', '2026-07-05', '2026-07-15', 1),
-('LO-2026-027', 'Estate of M. Subramaniam — Probate', 'Subramaniam Family', 'Estate & Succession', 'open', 'low', '2026-06-02', '2026-09-15', NULL, 1),
-('LO-2026-002', 'Anand Constructions — Arbitration', 'Anand Constructions', 'Arbitration', 'closed', 'medium', '2026-01-09', '2026-04-30', NULL, 1),
-('LO-2026-033', 'Meridian Capital — Share Purchase Agreement', 'Meridian Capital Partners', 'Corporate', 'open', 'high', '2026-06-15', '2026-07-20', NULL, 1);
-
-INSERT INTO `legalops_tasks` (`case_id`, `title`, `due_on`, `priority`, `status`, `assigned_to`, `created_by`, `source`) VALUES
-(1, 'Review revised lease clauses with client', '2026-07-02', 'high', 'in_progress', 1, 1, 'manual'),
-(2, 'File rejoinder with district court', '2026-07-04', 'high', 'pending', 1, 1, 'manual'),
-(3, 'Respond to TM opposition board notice', '2026-07-06', 'medium', 'pending', 1, 1, 'manual'),
-(6, 'Draft SPA disclosure schedules', '2026-07-01', 'high', 'in_progress', 1, 1, 'manual'),
-(4, 'Collect succession certificates from family', '2026-07-12', 'low', 'pending', 1, 1, 'manual'),
-(5, 'Close out arbitration billing file', '2026-06-30', 'medium', 'done', 1, 1, 'manual');
-
-INSERT INTO `legalops_activity` (`uid`, `action`, `description`) VALUES
-(1, 'case_created', 'Opened case LO-2026-033 — Meridian Capital — Share Purchase Agreement'),
-(1, 'task_completed', 'Marked "Close out arbitration billing file" as done'),
-(1, 'case_status', 'Moved LO-2026-002 — Anand Constructions — Arbitration to closed'),
-(1, 'task_created', 'Added task "Draft SPA disclosure schedules"'),
-(1, 'login', 'Signed in to LegalOps');
-
-INSERT INTO `legalops_clients`
-  (`id`, `entity_type`, `display_name`, `pan`, `registration_number`, `email`, `phone`,
-   `address_line1`, `address_line2`, `city`, `state`, `pincode`, `onboarding_status`, `kyc_status`, `created_by`) VALUES
-(1, 'private_limited', 'Sundaram Textiles Pvt Ltd', 'AABCS1234D', 'U17110TN2014PTC098765', 'contact@sundaramtextiles.in', '+91 44 2345 6789',
-  'Plot 12, SIDCO Industrial Estate', 'Guindy', 'Chennai', 'Tamil Nadu', '600032', 'active', 'verified', 1),
-(2, 'individual', 'R. Krishnan', 'BFKPK4567L', NULL, 'r.krishnan@example.com', '+91 98400 12345',
-  '14 Lake View Road', 'Nungambakkam', 'Chennai', 'Tamil Nadu', '600034', 'active', 'verified', 1),
-(3, 'private_limited', 'Velan Foods Ltd', 'AAFCV6789K', 'U15400TN2011PLC076543', 'legal@velanfoods.in', '+91 422 234 5678',
-  'No. 8, Avinashi Road', NULL, 'Coimbatore', 'Tamil Nadu', '641018', 'kyc_verified', 'verified', 1),
-(4, 'family', 'Subramaniam Family (HUF)', 'AAHHS3456M', NULL, 'subramaniam.family@example.com', '+91 98410 65432',
-  '21 Temple Street', 'Mylapore', 'Chennai', 'Tamil Nadu', '600004', 'kyc_pending', 'pending', 1),
-(5, 'partnership', 'Anand Constructions', 'AAJFA2345N', 'TN/ROF/2009/4521', 'info@anandconstructions.in', '+91 44 4567 8901',
-  '56 Anna Salai', NULL, 'Chennai', 'Tamil Nadu', '600002', 'active', 'verified', 1),
-(6, 'trust', 'Meridian Capital Charitable Trust', 'AAATM7890P', 'TN/TRUST/2018/1123', 'trustoffice@meridiancapital.in', '+91 44 6789 0123',
-  '101 Apex Towers, OMR', NULL, 'Chennai', 'Tamil Nadu', '600096', 'draft', 'pending', 1);
-
--- Link the seeded matters to their matching client records. Two are left
--- unlinked on purpose: "Subramaniam Family" (case) vs "Subramaniam Family
--- (HUF)" (client) is a near-miss a person should confirm by hand, and
--- "Meridian Capital Partners" (case) is a different entity entirely from
--- "Meridian Capital Charitable Trust" (client) despite the similar name.
-UPDATE `legalops_cases` c JOIN `legalops_clients` cl ON cl.display_name = c.client_name SET c.client_id = cl.id;
-
-INSERT INTO `legalops_client_leadership`
-  (`client_id`, `role`, `full_name`, `pan`, `id_proof_type`, `id_proof_number`, `din_or_membership_no`, `email`, `phone`, `kyc_verified`, `status`, `effective_from`, `effective_to`) VALUES
-(1, 'Managing Director', 'Aishwarya Krishnan', 'AABCS1111D', 'Aadhaar', 'XXXX-XXXX-4521', 'DIN08123456', 'aishwarya@sundaramtextiles.in', '+91 98400 11111', 1, 'active', '2014-08-01', NULL),
-(1, 'Director', 'Karthik Sundaram', 'AABCS2222E', 'Passport', 'P1234567', 'DIN08234567', 'karthik@sundaramtextiles.in', '+91 98400 22222', 1, 'active', '2014-08-01', NULL),
-(1, 'Director', 'Geetha Ramaswamy', 'AABCS3333F', 'Aadhaar', 'XXXX-XXXX-7788', 'DIN08001122', 'geetha@sundaramtextiles.in', NULL, 1, 'removed', '2014-08-01', '2025-11-30'),
-(2, 'Individual', 'R. Krishnan', 'BFKPK4567L', 'Aadhaar', 'XXXX-XXXX-9012', NULL, 'r.krishnan@example.com', '+91 98400 12345', 1, 'active', '2020-01-01', NULL),
-(3, 'Director', 'Velan Murugesan', 'AAFCV1111K', 'Aadhaar', 'XXXX-XXXX-3344', 'DIN07112233', 'velan@velanfoods.in', '+91 422 200 1111', 1, 'active', '2011-05-01', NULL),
-(4, 'Karta', 'M. Subramaniam', 'AAHHS3456M', 'Aadhaar', 'XXXX-XXXX-5566', NULL, 'subramaniam.family@example.com', '+91 98410 65432', 0, 'active', '2015-01-01', NULL),
-(5, 'Managing Partner', 'Anand Vellaichamy', 'AAJFA1111N', 'Aadhaar', 'XXXX-XXXX-1212', NULL, 'anand@anandconstructions.in', '+91 44 4567 1111', 1, 'active', '2009-03-01', NULL),
-(5, 'Partner', 'Suresh Babu', 'AAJFA2222P', 'Voter ID', 'TN/AB1234567', NULL, 'suresh@anandconstructions.in', '+91 44 4567 2222', 1, 'active', '2009-03-01', NULL);
-
-INSERT INTO `legalops_client_contacts` (`client_id`, `full_name`, `designation`, `email`, `phone`, `notes`) VALUES
-(1, 'Priya Natarajan', 'Company Secretary', 'priya.cs@sundaramtextiles.in', '+91 98400 33333', 'Primary point of contact for filings'),
-(1, 'Mohan Raj', 'Finance Manager', 'mohan@sundaramtextiles.in', '+91 98400 44444', NULL),
-(3, 'Lakshmi Iyer', 'Legal Counsel (in-house)', 'lakshmi@velanfoods.in', '+91 422 200 2222', 'Coordinates on IP matters'),
-(5, 'Divya Anand', 'Site Office Coordinator', 'divya@anandconstructions.in', '+91 44 4567 3333', NULL);
-
-INSERT INTO `legalops_billing_entities` (`name`, `country`, `entity_type`, `tax_reg_no`, `state_or_emirate`, `address`, `default_currency`, `invoice_prefix`, `bank_details`) VALUES
-('LegalOps India Pvt Ltd', 'IN', 'IN_GST', '33AAAAA0000A1Z5', 'Tamil Nadu', 'No. 12, Anna Salai, Chennai, Tamil Nadu 600002, India', 'INR', 'LO-IN', 'Bank: HDFC Bank · A/C: 50100123456789 · IFSC: HDFC0000123'),
-('LegalOps DMCC', 'AE', 'GCC_VAT', '100123456700003', 'Dubai', 'Unit 14, Jewellery & Gemplex 3, DMCC, Dubai, UAE', 'AED', 'LO-AE', 'Bank: Emirates NBD · IBAN: AE070260001234567890123 · SWIFT: EBILAEAD');
-
-INSERT INTO `legalops_invoice_number_sequences` (`billing_entity_id`, `period_key`, `last_number`) VALUES
-(1, '2627', 1);
-
-INSERT INTO `legalops_invoices`
-  (`invoice_no`, `billing_entity_id`, `case_id`, `client_name`, `client_country`, `client_tax_reg_no`, `client_address`, `tax_profile_key`, `place_of_supply`, `currency`, `invoice_date`, `due_date`, `subtotal`, `tax_total`, `grand_total`, `tax_breakdown`, `notes`, `status`, `created_by`, `issued_at`)
-VALUES
-  ('LO-IN/2627/0001', 1, 1, 'Sundaram Textiles Pvt Ltd', 'IN', '33BBBBB1111B1Z2', 'Plot 45, Guindy Industrial Estate, Chennai, Tamil Nadu 600032', 'IN_GST_domestic', 'Tamil Nadu', 'INR', '2026-06-15', '2026-07-15', 75000.00, 13500.00, 88500.00,
-   '{"CGST":{"rate":9,"amount":6750},"SGST":{"rate":9,"amount":6750}}',
-   'Professional fees for lease renewal advisory — June 2026.', 'issued', 1, '2026-06-15 10:00:00');
-
-INSERT INTO `legalops_invoice_items` (`invoice_id`, `description`, `hsn_sac`, `quantity`, `unit_price`, `tax_rate`, `line_subtotal`, `line_tax`, `line_total`, `sort_order`) VALUES
-(1, 'Legal advisory — commercial lease renewal review', '9982', 1, 50000.00, 18, 50000.00, 9000.00, 59000.00, 0),
-(1, 'Drafting amended lease deed', '9982', 1, 25000.00, 18, 25000.00, 4500.00, 29500.00, 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

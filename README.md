@@ -18,7 +18,12 @@ lops2/
 │   └── routes.php       All URL → Controller@method mappings
 ├── cron/                Daily/scheduled CLI scripts (CLI-only, 403 over HTTP)
 ├── database/
-│   ├── schema.sql       Full schema for a fresh install
+│   ├── schema.sql       Structure only, no data — every table, nothing else
+│   ├── lib.php          Shared connection/CLI helpers for the scripts below
+│   ├── install.php      Creates the DB (if missing) + runs schema.sql
+│   ├── seed_demo.php    Loads a thorough demo dataset — every status,
+│   │                    every entity type, every tax profile, both users
+│   ├── reset.php        Drops the DB entirely and rebuilds via the two above
 │   └── migrations/      Incremental migrations for existing installs
 ├── libs/                Vendored PHPAuth + calendar_sync engine
 ├── public/
@@ -42,12 +47,34 @@ No `.php` in any URL the user ever sees.
 1. Place the `lops2` folder inside `C:\xampp\htdocs\`.
 2. Start Apache + MySQL in the XAMPP control panel.
 3. Edit `config/app.php` if your DB credentials or folder name differ.
-4. **Fresh install** — import `database/schema.sql` into a new database called `lops2`.
-5. **Existing legalops install** — run the migration files in `database/migrations/` in order
-   (they use `IF NOT EXISTS`, so they are idempotent).
-6. Visit `http://localhost/lops2/public/`.
+4. From the `lops2` folder, run:
+   ```
+   php database/install.php
+   ```
+   This creates the database (if it doesn't exist) and every table LegalOps
+   needs — no demo data, just the structure. Prefer raw SQL? `mysql -u root
+   lops2 < database\schema.sql` does the same thing.
+5. Either:
+   - Visit `/register` and create your own first (admin) account, **or**
+   - Run `php database/seed_demo.php` for a full demo dataset to click
+     around and test every status/condition with (see credentials below).
+6. **Existing install upgrading from an earlier version?** Run the files in
+   `database/migrations/` in order (they use `IF NOT EXISTS`, so they're
+   idempotent).
+7. Visit `http://localhost/lops2/public/`.
 
-**Demo login:** `demo@legalops.local` / `LegalOps@123`
+**Demo login (after running `seed_demo.php`):**
+- `demo@legalops.local` / `LegalOps@123` — admin, sees everything
+- `associate@legalops.local` / `LegalOps@123` — member, sees only their own tasks
+
+**Reset everything back to a clean demo state:**
+```
+php database/reset.php
+```
+This drops the database entirely and rebuilds it from `install.php` +
+`seed_demo.php`. It asks for confirmation (type `RESET`) since it's
+destructive; pass `--force` to skip the prompt for scripted use. All three
+scripts are CLI-only — they refuse to run over HTTP.
 
 ---
 
