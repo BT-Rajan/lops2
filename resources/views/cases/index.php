@@ -88,7 +88,8 @@ function render_intel_fieldset(string $prefix, array $courtTypes, array $caseSta
   <button class="btn btn-primary" type="button" id="case-toggle-btn"><?= icon('plus') ?> New matter</button>
 </div>
 
-<!-- Inline new-matter panel -->
+<!-- New-matter modal -->
+<div class="modal-overlay" id="case-panel-overlay">
 <div class="card inline-panel" id="case-panel">
   <form method="post" action="<?= url('cases') ?>">
     <div class="card-head" style="padding:20px 24px 0">
@@ -170,6 +171,7 @@ function render_intel_fieldset(string $prefix, array $courtTypes, array $caseSta
     </div>
   </form>
 </div>
+</div>
 
 <form method="get" action="<?= url('cases') ?>" class="toolbar">
   <input class="input" type="text" name="q" placeholder="Search title, client, matter no, judge, court…" value="<?= htmlspecialchars($search) ?>">
@@ -231,8 +233,9 @@ function render_intel_fieldset(string $prefix, array $courtTypes, array $caseSta
   <?php endif; ?>
 </div>
 
-<!-- Edit panel (reuses the same form, posts to /cases/{id}) -->
-<div class="card inline-panel" id="case-edit-panel" style="display:none">
+<!-- Edit modal (reuses the same form, posts to /cases/{id}) -->
+<div class="modal-overlay" id="case-edit-overlay">
+<div class="card inline-panel" id="case-edit-panel">
   <form method="post" id="case-edit-form">
     <?= csrf_field() ?>
     <div class="card-head" style="padding:20px 24px 0">
@@ -295,24 +298,35 @@ function render_intel_fieldset(string $prefix, array $courtTypes, array $caseSta
     </div>
   </form>
 </div>
+</div>
 
 <script>
 (function(){
-  var panel     = document.getElementById('case-panel');
+  var overlay     = document.getElementById('case-panel-overlay');
+  var editOverlay = document.getElementById('case-edit-overlay');
   var editPanel = document.getElementById('case-edit-panel');
   var editForm  = document.getElementById('case-edit-form');
 
-  function openNew(){  panel.classList.add('open');     panel.scrollIntoView({behavior:'smooth',block:'start'}); document.getElementById('f-case_number').focus(); }
-  function closeNew(){ panel.classList.remove('open'); }
-  function closeEdit(){ editPanel.style.display='none'; }
+  function openNew(){  overlay.classList.add('open');     document.getElementById('f-case_number').focus(); }
+  function closeNew(){ overlay.classList.remove('open'); }
+  function openEdit(){ editOverlay.classList.add('open'); }
+  function closeEdit(){ editOverlay.classList.remove('open'); }
 
   document.getElementById('case-toggle-btn').addEventListener('click',function(){
-    if(panel.classList.contains('open')){ closeNew(); } else { closeNew(); closeEdit(); openNew(); }
+    if(overlay.classList.contains('open')){ closeNew(); } else { closeNew(); closeEdit(); openNew(); }
   });
   document.getElementById('case-cancel-btn').addEventListener('click', closeNew);
   document.getElementById('case-panel-close').addEventListener('click', closeNew);
   document.getElementById('case-edit-close').addEventListener('click', closeEdit);
   document.getElementById('case-edit-cancel').addEventListener('click', closeEdit);
+
+  // Click the dimmed backdrop (not the panel itself) or press Escape to close.
+  [overlay, editOverlay].forEach(function (ov) {
+    ov.addEventListener('click', function (e) { if (e.target === ov) { closeNew(); closeEdit(); } });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeNew(); closeEdit(); }
+  });
 
   // Selecting a client auto-fills + locks the free-text name so it can never
   // drift from the actual client record; "Not linked" hands control back.
@@ -346,8 +360,7 @@ function render_intel_fieldset(string $prefix, array $courtTypes, array $caseSta
       var details = editPanel.querySelector('.disclosure');
       if (details) details.open = hasIntel;
       closeNew();
-      editPanel.style.display='block';
-      editPanel.scrollIntoView({behavior:'smooth',block:'start'});
+      openEdit();
     });
   });
 })();

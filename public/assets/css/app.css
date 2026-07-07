@@ -150,6 +150,8 @@ h1, h2, h3, .display {
   place-items: center;
   box-shadow: 0 6px 18px rgba(201,162,39,0.35);
 }
+svg { width: 1em; height: 1em; }
+.disclosure > summary svg { width: 15px; height: 15px; flex-shrink: 0; }
 .brand-mark .glyph svg { width: 20px; height: 20px; }
 .brand-wordmark {
   font-family: var(--font-display);
@@ -859,6 +861,15 @@ table.table tbody tr:nth-child(n+6) { animation-delay: 120ms; }
 @keyframes panelIn {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: none; }
+}
+
+.modal-overlay .inline-panel {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 0;
 }
 
 /* Modal (kept for any future use — not used by the Cases panel anymore) */
