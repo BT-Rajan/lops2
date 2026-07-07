@@ -62,7 +62,7 @@
     <?php foreach ($team as $t): ?><option value="<?= $t['id'] ?>" <?= $assigneeFilter === (int)$t['id'] ? 'selected' : '' ?>><?= htmlspecialchars($t['full_name'] ?: $t['email']) ?></option><?php endforeach; ?>
   </select>
   <?php endif; ?>
-  <?php foreach (['all' => 'All', 'pending' => 'Pending', 'in_progress' => 'In progress', 'hold' => 'On hold', 'done' => 'Done'] as $val => $label): ?>
+  <?php foreach (['all' => 'All', 'open' => 'Open', 'pending' => 'Pending', 'in_progress' => 'In progress', 'hold' => 'On hold', 'done' => 'Done'] as $val => $label): ?>
     <a class="filter-chip <?= $statusFilter === $val ? 'active' : '' ?>" href="<?= url('tasks?status=' . $val) ?>"><?= $label ?></a>
   <?php endforeach; ?>
   <button class="btn btn-ghost btn-sm" type="submit">Search</button>

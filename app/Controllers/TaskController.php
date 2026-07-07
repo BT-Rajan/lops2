@@ -30,7 +30,9 @@ class TaskController extends BaseController
         } elseif ($assigneeF > 0) {
             $sql .= ' AND t.assigned_to=?'; $params[] = $assigneeF;
         }
-        if (in_array($statusF, self::STATUSES, true)) {
+        if ($statusF === 'open') {
+            $sql .= " AND t.status != 'done'";
+        } elseif (in_array($statusF, self::STATUSES, true)) {
             $sql .= ' AND t.status=?'; $params[] = $statusF;
         }
         if ($search !== '') {

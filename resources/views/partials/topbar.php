@@ -14,7 +14,7 @@
       <span class="icon-light"><?= icon('sun') ?></span>
       <span class="icon-dark"><?= icon('moon') ?></span>
     </button>
-    <a class="icon-btn notif-btn" href="<?= url('tasks?status=pending') ?>" aria-label="<?= ($bellCount ?? 0) > 0 ? $bellCount . ' open tasks' : 'Open tasks' ?>">
+    <a class="icon-btn notif-btn" href="<?= url('tasks?status=open') ?>" aria-label="<?= ($bellCount ?? 0) > 0 ? $bellCount . ' open tasks' : 'Open tasks' ?>">
       <?= icon('bell') ?>
       <?php if (($bellCount ?? 0) > 0): ?>
         <span class="notif-badge"><?= $bellCount > 9 ? '9+' : $bellCount ?></span>
