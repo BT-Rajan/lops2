@@ -11,6 +11,20 @@ function url(string $path = ''): string
     return rtrim(APP_BASE, '/') . '/' . ltrim($path, '/');
 }
 
+/**
+ * Same as url(), but for static assets (CSS/JS) — appends the file's
+ * last-modified time as a cache-busting query string. Without this, a
+ * fixed CSS/JS bug can silently fail to show up for someone whose
+ * browser already cached the old file, since there's no build step
+ * here that hashes filenames on change.
+ */
+function asset_url(string $path): string
+{
+    $full = LOPS2_ROOT . '/public/' . ltrim($path, '/');
+    $version = is_file($full) ? filemtime($full) : time();
+    return url($path) . '?v=' . $version;
+}
+
 function redirect(string $path): never
 {
     header('Location: ' . url($path));

@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= htmlspecialchars($pageTitle ?? APP_NAME) ?></title>
-<link rel="stylesheet" href="<?= url('assets/css/app.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('assets/css/app.css') ?>">
 </head>
 <body>
 <div class="auth-shell">
@@ -34,6 +34,6 @@
   </div>
 </div>
 <script>window.APP_BASE = <?= json_encode(url('')) ?>;</script>
-<script src="<?= url('assets/js/app.js') ?>"></script>
+<script src="<?= asset_url('assets/js/app.js') ?>"></script>
 </body>
 </html>

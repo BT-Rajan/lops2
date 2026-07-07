@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= htmlspecialchars($title ?? 'Error') ?></title>
-<link rel="stylesheet" href="<?= url('assets/css/app.css') ?>">
+<link rel="stylesheet" href="<?= asset_url('assets/css/app.css') ?>">
 </head>
 <body style="display:grid;place-items:center;min-height:100vh">
 <div style="text-align:center;max-width:480px;padding:24px">
