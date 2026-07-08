@@ -962,6 +962,8 @@ table.table tbody tr:nth-child(n+6) { animation-delay: 120ms; }
   background: var(--surface-card-solid);
 }
 .cal-cell-empty { background: transparent; border-color: transparent; }
+.cal-cell-clickable { cursor: pointer; transition: border-color .15s var(--ease), box-shadow .15s var(--ease); }
+.cal-cell-clickable:hover { border-color: var(--accent-600); box-shadow: 0 4px 14px -6px rgba(59,111,224,0.35); }
 .cal-cell-today { border-color: var(--accent-600); box-shadow: 0 0 0 1px var(--accent-600) inset; }
 .cal-daynum { font-size: 12.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
 .cal-cell-today .cal-daynum { color: var(--accent-600); }

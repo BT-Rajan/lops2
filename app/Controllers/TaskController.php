@@ -60,10 +60,31 @@ class TaskController extends BaseController
         ]);
     }
 
+    /**
+     * Where to land after a task CRUD action. Defaults to /tasks (unchanged
+     * behavior). The calendar's day modal posts _redirect_to=calendar (plus
+     * the month/year/viewed-user it was showing) so saving a task from
+     * there returns to that same calendar view instead of jumping away to
+     * the Tasks list.
+     */
+    private function redirectBack(): never
+    {
+        if (($_POST['_redirect_to'] ?? '') === 'calendar') {
+            $y = max(2000, min(2100, (int)($_POST['_redirect_y'] ?? date('Y'))));
+            $m = max(1, min(12, (int)($_POST['_redirect_m'] ?? date('n'))));
+            $qs = 'y=' . $y . '&m=' . $m;
+            if ($this->isAdmin() && (int)($_POST['_redirect_user'] ?? 0) > 0) {
+                $qs .= '&user=' . (int)$_POST['_redirect_user'];
+            }
+            $this->redirect('calendar?' . $qs);
+        }
+        $this->redirect('tasks');
+    }
+
     public function store(): void
     {
         $user = $this->requireLogin();
-        if (!csrf_valid()) { flash('error', 'Session expired.'); $this->redirect('tasks'); }
+        if (!csrf_valid()) { flash('error', 'Session expired.'); $this->redirectBack(); }
 
         $title      = trim($_POST['title'] ?? '');
         $notes      = trim($_POST['notes'] ?? '');
@@ -73,19 +94,19 @@ class TaskController extends BaseController
         $priority   = $this->postEnum('priority', self::PRIORITIES, 'medium');
         $assignedTo = $this->isAdmin() ? (int)($_POST['assigned_to'] ?? $this->uid()) : $this->uid();
 
-        if (!$title) { flash('error', 'Task title is required.'); $this->redirect('tasks'); }
+        if (!$title) { flash('error', 'Task title is required.'); $this->redirectBack(); }
 
         $this->pdo->prepare("INSERT INTO legalops_tasks (case_id,title,notes,due_on,due_time,priority,status,assigned_to,created_by,source) VALUES (?,?,?,?,?,?,'pending',?,?,'manual')")
             ->execute([$caseId, $title, $notes ?: null, $dueOn, $dueTime, $priority, $assignedTo, $this->uid()]);
         log_activity($this->pdo, $this->uid(), 'task_created', 'Created task "' . $title . '"');
         flash('success', 'Task created.');
-        $this->redirect('tasks');
+        $this->redirectBack();
     }
 
     public function update(array $params): void
     {
         $this->requireLogin();
-        if (!csrf_valid()) { flash('error', 'Session expired.'); $this->redirect('tasks'); }
+        if (!csrf_valid()) { flash('error', 'Session expired.'); $this->redirectBack(); }
 
         $id     = (int)$params['id'];
         $action = $_POST['_action'] ?? 'save';
@@ -103,25 +124,25 @@ class TaskController extends BaseController
         } else {
             $title      = trim($_POST['title'] ?? '');
             $assignedTo = $this->isAdmin() ? (int)($_POST['assigned_to'] ?? $this->uid()) : $this->uid();
-            if (!$title) { flash('error', 'Title required.'); $this->redirect('tasks'); }
+            if (!$title) { flash('error', 'Title required.'); $this->redirectBack(); }
             $this->pdo->prepare('UPDATE legalops_tasks SET title=?,notes=?,case_id=?,due_on=?,due_time=?,priority=?,assigned_to=? WHERE id=?')
                 ->execute([$title, trim($_POST['notes'] ?? '') ?: null, (int)($_POST['case_id'] ?? 0) ?: null,
                            ($_POST['due_on'] ?? '') ?: null, ($_POST['due_time'] ?? '') ?: null,
                            $this->postEnum('priority', self::PRIORITIES, 'medium'), $assignedTo, $id]);
             flash('success', 'Task updated.');
         }
-        $this->redirect('tasks');
+        $this->redirectBack();
     }
 
     public function destroy(array $params): void
     {
         $this->requireLogin();
-        if (!csrf_valid()) { flash('error', 'Session expired.'); $this->redirect('tasks'); }
+        if (!csrf_valid()) { flash('error', 'Session expired.'); $this->redirectBack(); }
 
         $this->findAndAuthorise((int)$params['id']);
         $this->pdo->prepare('DELETE FROM legalops_tasks WHERE id=?')->execute([(int)$params['id']]);
         flash('success', 'Task deleted.');
-        $this->redirect('tasks');
+        $this->redirectBack();
     }
 
     private function findAndAuthorise(int $id): array
@@ -129,9 +150,9 @@ class TaskController extends BaseController
         $stmt = $this->pdo->prepare('SELECT * FROM legalops_tasks WHERE id=?');
         $stmt->execute([$id]);
         $task = $stmt->fetch();
-        if (!$task) { flash('error', 'Task not found.'); $this->redirect('tasks'); }
+        if (!$task) { flash('error', 'Task not found.'); $this->redirectBack(); }
         if (!$this->isAdmin() && $task['assigned_to'] != $this->uid() && $task['created_by'] != $this->uid()) {
-            flash('error', "You don't have access to that task."); $this->redirect('tasks');
+            flash('error', "You don't have access to that task."); $this->redirectBack();
         }
         return $task;
     }

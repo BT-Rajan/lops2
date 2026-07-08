@@ -43,6 +43,8 @@ class CalendarController extends BaseController
         $accounts = [];
         foreach ($stmt->fetchAll() as $a) { $accounts[$a['provider']] = $a; }
 
+        $cases = $this->pdo->query("SELECT id,case_number,title FROM legalops_cases WHERE status!='closed' ORDER BY case_number")->fetchAll();
+
         $this->view('calendar/index', [
             'pageTitle'      => 'Calendar',
             'activeNav'      => 'calendar',
@@ -53,6 +55,7 @@ class CalendarController extends BaseController
             'monthStart'     => $monthStart,
             'byDay'          => $byDay,
             'accounts'       => $accounts,
+            'cases'          => $cases,
             'googleOk'       => get_setting($this->pdo, 'google_client_id') !== '',
             'microsoftOk'    => get_setting($this->pdo, 'microsoft_client_id') !== '',
         ]);
