@@ -85,11 +85,12 @@ class BillingController extends BaseController
         $uid    = (int)$user['uid'];
 
         match ($action) {
-            'save'   => $this->saveInvoice($uid, $entitiesById),
-            'issue'  => $this->issueInvoice($uid, (int)($_POST['id'] ?? 0), $entitiesById),
-            'void'   => $this->voidInvoice($uid, (int)($_POST['id'] ?? 0)),
-            'delete' => $this->deleteInvoice($uid, (int)($_POST['id'] ?? 0)),
-            default  => null,
+            'save'            => $this->saveInvoice($uid, $entitiesById),
+            'issue'           => $this->issueInvoice($uid, (int)($_POST['id'] ?? 0), $entitiesById),
+            'void'            => $this->voidInvoice($uid, (int)($_POST['id'] ?? 0)),
+            'delete'          => $this->deleteInvoice($uid, (int)($_POST['id'] ?? 0)),
+            'record_payment'  => $this->recordPayment($uid, (int)($_POST['id'] ?? 0)),
+            default           => null,
         };
 
         $this->redirect('billing');
@@ -303,6 +304,44 @@ class BillingController extends BaseController
             $pdo->rollBack();
             flash('error', $e->getMessage());
         }
+    }
+
+    private function recordPayment(int $uid, int $id): void
+    {
+        $pdo = $this->pdo;
+        $stmt = $pdo->prepare('SELECT * FROM legalops_invoices WHERE id = ?');
+        $stmt->execute([$id]);
+        $invoice = $stmt->fetch();
+        if (!$invoice || $invoice['status'] !== 'issued') {
+            flash('error', 'Only issued invoices can have a payment recorded against them.');
+            return;
+        }
+
+        $amount = (float)($_POST['payment_amount'] ?? 0);
+        $ref    = trim($_POST['payment_reference'] ?? '') ?: null;
+        $balanceBefore = (float)$invoice['grand_total'] - (float)$invoice['amount_paid'];
+
+        if ($amount <= 0) {
+            flash('error', 'Enter a payment amount greater than zero.');
+            return;
+        }
+        if ($amount > $balanceBefore + 0.01) { // small epsilon for float rounding
+            flash('error', sprintf('That\'s more than the outstanding balance (%s %s).', $invoice['currency'], number_format($balanceBefore, 2)));
+            return;
+        }
+
+        $newPaid = round((float)$invoice['amount_paid'] + $amount, 2);
+        $pdo->prepare('UPDATE legalops_invoices SET amount_paid = ?, paid_at = NOW(), payment_reference = ? WHERE id = ?')
+            ->execute([$newPaid, $ref, $id]);
+
+        $fullyPaid = $newPaid >= (float)$invoice['grand_total'] - 0.01;
+        log_activity($pdo, $uid, 'invoice_payment', sprintf(
+            'Recorded payment of %s %s against invoice %s%s',
+            $invoice['currency'], number_format($amount, 2), $invoice['invoice_no'], $fullyPaid ? ' (now fully paid)' : ''
+        ));
+        flash('success', $fullyPaid
+            ? "Payment recorded — invoice {$invoice['invoice_no']} is now fully paid."
+            : "Payment recorded — {$invoice['currency']} " . number_format((float)$invoice['grand_total'] - $newPaid, 2) . ' still outstanding.');
     }
 
     private function voidInvoice(int $uid, int $id): void

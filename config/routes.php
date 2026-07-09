@@ -62,6 +62,9 @@ Router::post('/billing/entities',            'BillingEntityController@store');
 Router::get('/billing/invoices/{id}/items',  'BillingController@items');
 Router::get('/billing/invoices/{id}/pdf',    'BillingController@pdf');
 
+// ── Reports (admin only) ──────────────────────────────────────────────────────
+Router::get('/reports', 'ReportController@index');
+
 // ── Settings (admin only) ─────────────────────────────────────────────────────
 Router::get('/settings',             'SettingsController@index');
 Router::post('/settings',            'SettingsController@update');

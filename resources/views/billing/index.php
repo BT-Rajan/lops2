@@ -177,16 +177,30 @@
   <?php if ($invoices): ?>
   <table class="table">
     <thead>
-      <tr><th>Invoice</th><th>Client</th><th>Entity</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr>
+      <tr><th>Invoice</th><th>Client</th><th>Entity</th><th>Date</th><th>Total</th><th>Balance</th><th>Status</th><th></th></tr>
     </thead>
     <tbody>
-      <?php foreach ($invoices as $inv): ?>
+      <?php foreach ($invoices as $inv):
+        $balance = round((float)$inv['grand_total'] - (float)$inv['amount_paid'], 2);
+        $isOverdue = $inv['status'] === 'issued' && $balance > 0.01 && $inv['due_date'] && $inv['due_date'] < date('Y-m-d');
+      ?>
         <tr>
           <td><span class="mono"><?= htmlspecialchars($inv['invoice_no']) ?></span></td>
           <td class="case-client"><?= htmlspecialchars($inv['client_name']) ?></td>
           <td class="case-client"><?= htmlspecialchars($inv['entity_name']) ?></td>
           <td class="case-client"><?= date('d M Y', strtotime($inv['invoice_date'])) ?></td>
           <td class="mono"><?= htmlspecialchars(format_money((float)$inv['grand_total'], $inv['currency'])) ?></td>
+          <td class="mono">
+            <?php if ($inv['status'] === 'issued'): ?>
+              <?php if ($balance <= 0.01): ?>
+                <span style="color:var(--success)">Paid</span>
+              <?php else: ?>
+                <span style="<?= $isOverdue ? 'color:var(--danger);font-weight:700' : '' ?>"><?= htmlspecialchars(format_money($balance, $inv['currency'])) ?></span>
+                <?php if ($isOverdue): ?><div class="small" style="color:var(--danger)">Overdue</div>
+                <?php elseif ((float)$inv['amount_paid'] > 0): ?><div class="small muted">Partially paid</div><?php endif; ?>
+              <?php endif; ?>
+            <?php else: ?>—<?php endif; ?>
+          </td>
           <td><span class="badge badge-<?= htmlspecialchars($inv['status']) ?>"><?= htmlspecialchars(ucfirst($inv['status'])) ?></span></td>
           <td style="text-align:right;white-space:nowrap">
             <?php if ($inv['status'] === 'draft'): ?>
@@ -207,6 +221,11 @@
             <?php else: ?>
               <a class="icon-btn btn-sm" style="display:inline-grid" href="<?= url('billing/invoices/' . (int)$inv['id'] . '/pdf') ?>" target="_blank" title="View / download PDF"><?= icon('download') ?></a>
               <?php if ($inv['status'] === 'issued'): ?>
+                <?php if ($balance > 0.01): ?>
+                  <button class="icon-btn btn-sm record-payment-btn" style="display:inline-grid" type="button" title="Record payment"
+                    data-id="<?= (int)$inv['id'] ?>" data-invoice-no="<?= htmlspecialchars($inv['invoice_no']) ?>"
+                    data-balance="<?= $balance ?>" data-currency="<?= htmlspecialchars($inv['currency']) ?>"><?= icon('cash') ?></button>
+                <?php endif; ?>
                 <form method="post" action="<?= url('billing') ?>" style="display:inline" onsubmit="return confirm('Void this invoice? The number stays reserved for audit purposes.')">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="void">
@@ -369,5 +388,50 @@
   });
 
   resetForm();
+})();
+</script>
+
+<!-- Record payment modal -->
+<div class="modal-overlay" id="payment-modal-overlay">
+<div class="card inline-panel" id="payment-modal" style="max-width:420px">
+  <div class="card-head" style="padding:20px 24px 0">
+    <h3 id="payment-modal-title">Record payment</h3>
+    <span class="modal-close" id="payment-modal-close"><?= icon('close') ?></span>
+  </div>
+  <div class="card-pad" style="padding-top:14px">
+    <form method="post" action="<?= url('billing') ?>">
+      <?= csrf_field() ?>
+      <input type="hidden" name="action" value="record_payment">
+      <input type="hidden" name="id" id="payment-invoice-id">
+      <p class="case-client" id="payment-balance-line" style="margin-bottom:14px"></p>
+      <div class="field"><label>Amount received</label><input class="input mono" type="number" step="0.01" min="0.01" name="payment_amount" id="payment-amount" required></div>
+      <div class="field"><label>Reference (optional)</label><input class="input" type="text" name="payment_reference" placeholder="UTR / cheque no. / transaction ID"></div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
+        <button type="button" class="btn btn-ghost" id="payment-cancel-btn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Record payment</button>
+      </div>
+    </form>
+  </div>
+</div>
+</div>
+
+<script>
+(function () {
+  var overlay = document.getElementById('payment-modal-overlay');
+  document.querySelectorAll('.record-payment-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.getElementById('payment-invoice-id').value = btn.dataset.id;
+      var amountInput = document.getElementById('payment-amount');
+      amountInput.value = btn.dataset.balance;
+      amountInput.max = btn.dataset.balance;
+      document.getElementById('payment-balance-line').textContent =
+        'Invoice ' + btn.dataset.invoiceNo + ' — outstanding balance: ' + btn.dataset.currency + ' ' + parseFloat(btn.dataset.balance).toFixed(2);
+      overlay.classList.add('open');
+    });
+  });
+  document.getElementById('payment-modal-close').addEventListener('click', function () { overlay.classList.remove('open'); });
+  document.getElementById('payment-cancel-btn').addEventListener('click', function () { overlay.classList.remove('open'); });
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.classList.remove('open'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') overlay.classList.remove('open'); });
 })();
 </script>

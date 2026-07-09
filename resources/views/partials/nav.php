@@ -13,6 +13,7 @@ $nav = [
     'system' => [],
 ];
 if (is_admin($currentUser)) {
+    $nav['finance']['reports'] = ['label' => 'Reports', 'icon' => 'reports', 'href' => 'reports'];
     $nav['system']['settings'] = ['label' => 'Firm settings', 'icon' => 'settings', 'href' => 'settings'];
 }
 $nav['system']['profile'] = ['label' => 'My account',    'icon' => 'settings', 'href' => 'profile'];
