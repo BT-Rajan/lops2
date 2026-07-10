@@ -20,30 +20,30 @@ function kpi_delta(int $now, int $prev): array {
 </div>
 
 <div class="kpi-grid">
-  <div class="card kpi-card">
+  <a href="<?= url('cases?status=open') ?>" class="card kpi-card">
     <span class="kpi-icon icon-tint-blue"><?= icon('briefcase') ?></span>
     <div class="kpi-value"><?= $openCases ?></div>
     <div class="kpi-label">Open matters</div>
     <span class="kpi-delta <?= $openClass ?>"><?= $openDelta ?></span>
-  </div>
-  <div class="card kpi-card">
+  </a>
+  <a href="<?= url('cases?status=pending') ?>" class="card kpi-card">
     <span class="kpi-icon icon-tint-brass"><?= icon('clock') ?></span>
     <div class="kpi-value"><?= $pendingCases ?></div>
     <div class="kpi-label">Pending matters</div>
     <span class="kpi-delta kpi-flat">Awaiting next step</span>
-  </div>
-  <div class="card kpi-card">
+  </a>
+  <a href="<?= url('cases?status=closed') ?>" class="card kpi-card">
     <span class="kpi-icon icon-tint-green"><?= icon('check') ?></span>
     <div class="kpi-value"><?= $closedCases ?></div>
     <div class="kpi-label">Resolved matters</div>
     <span class="kpi-delta kpi-flat">Year to date</span>
-  </div>
-  <div class="card kpi-card">
+  </a>
+  <a href="<?= url('tasks?status=open') ?>" class="card kpi-card">
     <span class="kpi-icon icon-tint-red"><?= icon('flag') ?></span>
     <div class="kpi-value"><?= $openTasks ?></div>
     <div class="kpi-label">Open tasks</div>
     <span class="kpi-delta <?= $dueSoon > 0 ? 'kpi-down' : 'kpi-flat' ?>"><?= $dueSoon ?> due in 7 days</span>
-  </div>
+  </a>
 </div>
 
 <div class="grid-2">
@@ -78,14 +78,14 @@ function kpi_delta(int $now, int $prev): array {
     <div class="card card-pad">
       <div class="card-head"><h3>Upcoming tasks</h3><a class="link" href="<?= url('tasks') ?>">View all →</a></div>
       <?php if ($upcomingTasks): foreach ($upcomingTasks as $t): ?>
-        <div class="task-row <?= $t['status'] === 'done' ? 'done' : '' ?>">
+        <a href="<?= $t['case_id'] ? url('cases/' . $t['case_id']) : url('tasks') ?>" class="task-row <?= $t['status'] === 'done' ? 'done' : '' ?>" style="text-decoration:none;color:inherit">
           <span class="task-check"><?= $t['status'] === 'done' ? icon('check') : '' ?></span>
           <div>
             <div class="task-title"><?= htmlspecialchars($t['title']) ?></div>
             <div class="task-meta"><?= htmlspecialchars($t['case_title'] ?? 'No matter') ?> · <?= fmt_date($t['due_on'], 'd M') ?></div>
           </div>
           <span class="badge badge-<?= $t['priority'] ?>" style="margin-left:auto"><?= $t['priority'] ?></span>
-        </div>
+        </a>
       <?php endforeach; else: ?>
         <div class="empty-state"><p>No tasks right now.</p></div>
       <?php endif; ?>

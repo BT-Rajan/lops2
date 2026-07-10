@@ -173,6 +173,19 @@ function render_intel_fieldset(string $prefix, array $courtTypes, array $caseSta
 </div>
 </div>
 
+<?php
+$caseDrillParts = [];
+if ($practiceAreaFilter !== '') $caseDrillParts[] = $practiceAreaFilter;
+if ($openedMonthFilter !== '') $caseDrillParts[] = 'opened ' . date('F Y', strtotime($openedMonthFilter . '-01'));
+if ($closedMonthFilter !== '') $caseDrillParts[] = 'closed ' . date('F Y', strtotime($closedMonthFilter . '-01'));
+?>
+<?php if ($caseDrillParts): ?>
+  <div class="alert alert-info" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span>Showing: <strong><?= htmlspecialchars(implode(' · ', $caseDrillParts)) ?></strong> — from Reports.</span>
+    <a class="link" href="<?= url('cases') ?>">Clear filter ×</a>
+  </div>
+<?php endif; ?>
+
 <form method="get" action="<?= url('cases') ?>" class="toolbar">
   <input class="input" type="text" name="q" placeholder="Search title, client, matter no, judge, court…" value="<?= htmlspecialchars($search) ?>">
   <a class="filter-chip <?= $statusFilter === 'all' ? 'active' : '' ?>" href="<?= url('cases') ?>">All</a>

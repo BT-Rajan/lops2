@@ -113,6 +113,8 @@ class ReportController extends BaseController
             'byPracticeArea'      => $byPracticeArea,
             'topClients'          => $topClients,
             'months'              => $months,
+            'thisMonthStart'      => $thisMonthStart,
+            'nextMonthStart'      => date('Y-m-01', strtotime('+1 month')),
         ]);
     }
 }

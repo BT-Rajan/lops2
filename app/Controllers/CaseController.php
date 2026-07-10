@@ -21,11 +21,23 @@ class CaseController extends BaseController
 
         $statusFilter = $_GET['status'] ?? 'all';
         $search       = trim($_GET['q'] ?? '');
+        $practiceAreaFilter = trim($_GET['practice_area'] ?? '');
+        $openedMonthFilter  = trim($_GET['opened_month'] ?? ''); // YYYY-MM
+        $closedMonthFilter  = trim($_GET['closed_month'] ?? ''); // YYYY-MM
 
         $sql    = 'SELECT c.*, (SELECT COUNT(*) FROM legalops_case_documents WHERE case_id=c.id) AS doc_count FROM legalops_cases c WHERE 1=1';
         $params = [];
         if (in_array($statusFilter, self::STATUSES, true)) {
             $sql .= ' AND c.status=?'; $params[] = $statusFilter;
+        }
+        if ($practiceAreaFilter !== '') {
+            $sql .= ' AND c.practice_area = ?'; $params[] = $practiceAreaFilter;
+        }
+        if (preg_match('/^\d{4}-\d{2}$/', $openedMonthFilter)) {
+            $sql .= ' AND DATE_FORMAT(c.opened_on, "%Y-%m") = ?'; $params[] = $openedMonthFilter;
+        }
+        if (preg_match('/^\d{4}-\d{2}$/', $closedMonthFilter)) {
+            $sql .= ' AND DATE_FORMAT(c.disposal_date, "%Y-%m") = ?'; $params[] = $closedMonthFilter;
         }
         if ($search !== '') {
             $sql .= ' AND (c.title LIKE ? OR c.client_name LIKE ? OR c.case_number LIKE ? OR c.judge_name LIKE ? OR c.court_name LIKE ?)';
@@ -45,6 +57,9 @@ class CaseController extends BaseController
             'clients'       => $clients,
             'statusFilter'  => $statusFilter,
             'search'        => $search,
+            'practiceAreaFilter' => $practiceAreaFilter,
+            'openedMonthFilter'  => $openedMonthFilter,
+            'closedMonthFilter'  => $closedMonthFilter,
         ]);
     }
 

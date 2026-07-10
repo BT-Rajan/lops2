@@ -158,6 +158,25 @@
   </form>
 </div>
 
+<?php
+$balanceLabels = [
+    'outstanding' => 'Outstanding invoices', 'overdue' => 'Overdue invoices',
+    'aging_current' => 'Not yet due', 'aging_d1_30' => '1–30 days overdue',
+    'aging_d31_60' => '31–60 days overdue', 'aging_d61_90' => '61–90 days overdue', 'aging_d90_plus' => '90+ days overdue',
+];
+$drillParts = [];
+if ($balanceFilter !== '' && isset($balanceLabels[$balanceFilter])) $drillParts[] = $balanceLabels[$balanceFilter];
+if ($currencyFilter !== '') $drillParts[] = $currencyFilter;
+if ($fromFilter !== '' || $toFilter !== '') $drillParts[] = 'invoiced ' . ($fromFilter ? date('d M Y', strtotime($fromFilter)) : '…') . ' – ' . ($toFilter ? date('d M Y', strtotime($toFilter . ' -1 day')) : '…');
+if ($paidFromFilter !== '' || $paidToFilter !== '') $drillParts[] = 'paid ' . ($paidFromFilter ? date('d M Y', strtotime($paidFromFilter)) : '…') . ' – ' . ($paidToFilter ? date('d M Y', strtotime($paidToFilter . ' -1 day')) : '…');
+?>
+<?php if ($drillParts): ?>
+  <div class="alert alert-info" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span>Showing: <strong><?= htmlspecialchars(implode(' · ', $drillParts)) ?></strong> — from Reports.</span>
+    <a class="link" href="<?= url('billing') ?>">Clear filter ×</a>
+  </div>
+<?php endif; ?>
+
 <form method="get" class="toolbar">
   <input class="input" type="text" name="q" placeholder="Search by client or invoice #…" value="<?= htmlspecialchars($search) ?>">
   <select class="input" name="entity" onchange="this.form.submit()">

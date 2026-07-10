@@ -46,14 +46,32 @@ $agingLabels = ['current' => 'Current', 'd1_30' => '1–30 days', 'd31_60' => '3
           $deltaClass = $pct > 0 ? 'kpi-up' : ($pct < 0 ? 'kpi-down' : 'kpi-flat');
         }
         $overdue = (float)($overdueByCcy[$ccy] ?? 0);
+        $outstanding = (float)($outstandingByCcy[$ccy] ?? 0);
       ?>
         <tr>
           <td class="mono" style="font-weight:700"><?= htmlspecialchars($ccy) ?></td>
-          <td class="mono"><?= htmlspecialchars(format_money($now, $ccy)) ?> <span class="case-client">(<?= (int)($invoicedCntByCcy[$ccy] ?? 0) ?> invoice<?= ($invoicedCntByCcy[$ccy] ?? 0) === 1 ? '' : 's' ?>)</span></td>
+          <td class="mono">
+            <?php if ($now > 0): ?>
+              <a class="link" href="<?= url('billing?status=issued&currency=' . urlencode($ccy) . '&from=' . $thisMonthStart . '&to=' . $nextMonthStart) ?>"><?= htmlspecialchars(format_money($now, $ccy)) ?></a>
+            <?php else: ?><?= htmlspecialchars(format_money($now, $ccy)) ?><?php endif; ?>
+            <span class="case-client">(<?= (int)($invoicedCntByCcy[$ccy] ?? 0) ?> invoice<?= ($invoicedCntByCcy[$ccy] ?? 0) === 1 ? '' : 's' ?>)</span>
+          </td>
           <td><span class="kpi-delta <?= $deltaClass ?>"><?= htmlspecialchars($delta) ?></span></td>
-          <td class="mono"><?= htmlspecialchars(format_money((float)($collectedByCcy[$ccy] ?? 0), $ccy)) ?></td>
-          <td class="mono"><?= htmlspecialchars(format_money((float)($outstandingByCcy[$ccy] ?? 0), $ccy)) ?></td>
-          <td class="mono" style="<?= $overdue > 0 ? 'color:var(--danger);font-weight:700' : '' ?>"><?= htmlspecialchars(format_money($overdue, $ccy)) ?></td>
+          <td class="mono">
+            <?php if ((float)($collectedByCcy[$ccy] ?? 0) > 0): ?>
+              <a class="link" href="<?= url('billing?currency=' . urlencode($ccy) . '&paid_from=' . $thisMonthStart . '&paid_to=' . $nextMonthStart) ?>"><?= htmlspecialchars(format_money((float)($collectedByCcy[$ccy] ?? 0), $ccy)) ?></a>
+            <?php else: ?><?= htmlspecialchars(format_money((float)($collectedByCcy[$ccy] ?? 0), $ccy)) ?><?php endif; ?>
+          </td>
+          <td class="mono">
+            <?php if ($outstanding > 0): ?>
+              <a class="link" href="<?= url('billing?currency=' . urlencode($ccy) . '&balance=outstanding') ?>"><?= htmlspecialchars(format_money($outstanding, $ccy)) ?></a>
+            <?php else: ?><?= htmlspecialchars(format_money($outstanding, $ccy)) ?><?php endif; ?>
+          </td>
+          <td class="mono" style="<?= $overdue > 0 ? 'color:var(--danger);font-weight:700' : '' ?>">
+            <?php if ($overdue > 0): ?>
+              <a href="<?= url('billing?currency=' . urlencode($ccy) . '&balance=overdue') ?>" style="color:inherit;text-decoration:underline"><?= htmlspecialchars(format_money($overdue, $ccy)) ?></a>
+            <?php else: ?><?= htmlspecialchars(format_money($overdue, $ccy)) ?><?php endif; ?>
+          </td>
         </tr>
       <?php endforeach; ?>
     </tbody>
@@ -74,7 +92,11 @@ $agingLabels = ['current' => 'Current', 'd1_30' => '1–30 days', 'd31_60' => '3
         <tr>
           <td class="mono" style="font-weight:700"><?= htmlspecialchars($ccy) ?></td>
           <?php $rowTotal = 0; foreach (array_keys($agingLabels) as $key): $amt = (float)($buckets[$key] ?? 0); $rowTotal += $amt; ?>
-            <td class="mono" style="<?= $key !== 'current' && $amt > 0 ? 'color:var(--danger)' : '' ?>"><?= $amt > 0 ? htmlspecialchars(format_money($amt, $ccy)) : '—' ?></td>
+            <td class="mono" style="<?= $key !== 'current' && $amt > 0 ? 'color:var(--danger)' : '' ?>">
+              <?php if ($amt > 0): ?>
+                <a href="<?= url('billing?currency=' . urlencode($ccy) . '&balance=aging_' . $key) ?>" style="color:inherit;text-decoration:underline"><?= htmlspecialchars(format_money($amt, $ccy)) ?></a>
+              <?php else: ?>—<?php endif; ?>
+            </td>
           <?php endforeach; ?>
           <td class="mono" style="font-weight:700"><?= htmlspecialchars(format_money($rowTotal, $ccy)) ?></td>
         </tr>
@@ -97,8 +119,8 @@ $agingLabels = ['current' => 'Current', 'd1_30' => '1–30 days', 'd31_60' => '3
       ?>
         <div style="margin-bottom:16px">
           <div class="small muted" style="font-weight:700;margin-bottom:8px"><?= htmlspecialchars($ccy) ?></div>
-          <?php foreach ($rows as $r): $pct = $max > 0 ? round(((float)$r['total'] / $max) * 100) : 0; ?>
-            <div style="margin-bottom:8px">
+          <?php foreach ($rows as $r): $pct = $max > 0 ? round(((float)$r['total'] / $max) * 100) : 0; $isLinked = $r['practice_area'] !== 'No matter linked'; ?>
+            <?php if ($isLinked): ?><a href="<?= url('cases?practice_area=' . urlencode($r['practice_area'])) ?>" style="display:block;margin-bottom:8px;color:inherit;text-decoration:none"><?php else: ?><div style="margin-bottom:8px"><?php endif; ?>
               <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
                 <span><?= htmlspecialchars($r['practice_area']) ?></span>
                 <span class="mono"><?= htmlspecialchars(format_money((float)$r['total'], $ccy)) ?></span>
@@ -106,7 +128,7 @@ $agingLabels = ['current' => 'Current', 'd1_30' => '1–30 days', 'd31_60' => '3
               <div style="background:var(--border-card);border-radius:4px;height:6px;overflow:hidden">
                 <div style="background:var(--accent-600);height:100%;width:<?= $pct ?>%"></div>
               </div>
-            </div>
+            <?php echo $isLinked ? '</a>' : '</div>'; ?>
           <?php endforeach; ?>
         </div>
       <?php endforeach; ?>
@@ -126,7 +148,7 @@ $agingLabels = ['current' => 'Current', 'd1_30' => '1–30 days', 'd31_60' => '3
         <div style="margin-bottom:16px">
           <div class="small muted" style="font-weight:700;margin-bottom:8px"><?= htmlspecialchars($ccy) ?></div>
           <?php foreach ($rows as $r): $pct = $max > 0 ? round(((float)$r['total'] / $max) * 100) : 0; ?>
-            <div style="margin-bottom:8px">
+            <a href="<?= url('billing?q=' . urlencode($r['client_name']) . '&currency=' . urlencode($ccy)) ?>" style="display:block;margin-bottom:8px;color:inherit;text-decoration:none">
               <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
                 <span><?= htmlspecialchars($r['client_name']) ?> <span class="case-client">(<?= (int)$r['cnt'] ?>)</span></span>
                 <span class="mono"><?= htmlspecialchars(format_money((float)$r['total'], $ccy)) ?></span>
@@ -134,7 +156,7 @@ $agingLabels = ['current' => 'Current', 'd1_30' => '1–30 days', 'd31_60' => '3
               <div style="background:var(--border-card);border-radius:4px;height:6px;overflow:hidden">
                 <div style="background:var(--brass-500);height:100%;width:<?= $pct ?>%"></div>
               </div>
-            </div>
+            </a>
           <?php endforeach; ?>
         </div>
       <?php endforeach; ?>
@@ -152,8 +174,8 @@ $agingLabels = ['current' => 'Current', 'd1_30' => '1–30 days', 'd31_60' => '3
     <?php foreach ($months as $m): ?>
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end">
         <div style="display:flex;gap:3px;align-items:flex-end;height:100px">
-          <div title="<?= $m['opened'] ?> opened" style="width:16px;border-radius:3px 3px 0 0;background:var(--accent-600);height:<?= round(($m['opened']/$maxT)*100) ?>%;min-height:<?= $m['opened']>0?'3px':'0' ?>"></div>
-          <div title="<?= $m['closed'] ?> closed" style="width:16px;border-radius:3px 3px 0 0;background:var(--success);height:<?= round(($m['closed']/$maxT)*100) ?>%;min-height:<?= $m['closed']>0?'3px':'0' ?>"></div>
+          <a href="<?= url('cases?opened_month=' . $m['ym']) ?>" title="<?= $m['opened'] ?> opened" style="display:block;width:16px;border-radius:3px 3px 0 0;background:var(--accent-600);height:<?= round(($m['opened']/$maxT)*100) ?>%;min-height:<?= $m['opened']>0?'3px':'0' ?>"></a>
+          <a href="<?= url('cases?closed_month=' . $m['ym']) ?>" title="<?= $m['closed'] ?> closed" style="display:block;width:16px;border-radius:3px 3px 0 0;background:var(--success);height:<?= round(($m['closed']/$maxT)*100) ?>%;min-height:<?= $m['closed']>0?'3px':'0' ?>"></a>
         </div>
         <div class="small muted"><?= $m['label'] ?></div>
       </div>

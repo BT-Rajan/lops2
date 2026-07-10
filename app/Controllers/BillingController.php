@@ -20,9 +20,15 @@ class BillingController extends BaseController
             'SELECT * FROM legalops_billing_entities WHERE is_active = 1 ORDER BY name'
         )->fetchAll();
 
-        $statusFilter = $_GET['status'] ?? 'all';
-        $entityFilter = (int)($_GET['entity'] ?? 0);
-        $search       = trim($_GET['q'] ?? '');
+        $statusFilter  = $_GET['status'] ?? 'all';
+        $entityFilter  = (int)($_GET['entity'] ?? 0);
+        $search        = trim($_GET['q'] ?? '');
+        $currencyFilter = trim($_GET['currency'] ?? '');
+        $fromFilter    = trim($_GET['from'] ?? '');
+        $toFilter      = trim($_GET['to'] ?? '');
+        $paidFromFilter = trim($_GET['paid_from'] ?? '');
+        $paidToFilter   = trim($_GET['paid_to'] ?? '');
+        $balanceFilter  = trim($_GET['balance'] ?? ''); // outstanding | overdue | aging_current | aging_1_30 | aging_31_60 | aging_61_90 | aging_90_plus
 
         $sql = 'SELECT i.*, e.name AS entity_name FROM legalops_invoices i
                 JOIN legalops_billing_entities e ON e.id = i.billing_entity_id WHERE 1=1';
@@ -34,6 +40,33 @@ class BillingController extends BaseController
         if ($entityFilter > 0) {
             $sql .= ' AND i.billing_entity_id = ?';
             $params[] = $entityFilter;
+        }
+        if ($currencyFilter !== '') {
+            $sql .= ' AND i.currency = ?';
+            $params[] = $currencyFilter;
+        }
+        if ($fromFilter !== '') { $sql .= ' AND i.invoice_date >= ?'; $params[] = $fromFilter; }
+        if ($toFilter !== '')   { $sql .= ' AND i.invoice_date < ?';  $params[] = $toFilter; }
+        if ($paidFromFilter !== '') { $sql .= ' AND i.paid_at >= ?'; $params[] = $paidFromFilter; }
+        if ($paidToFilter !== '')   { $sql .= ' AND i.paid_at < ?';  $params[] = $paidToFilter; }
+        if ($balanceFilter !== '') {
+            $sql .= " AND i.status = 'issued' AND (i.grand_total - i.amount_paid) > 0.01";
+            if ($balanceFilter === 'overdue') {
+                $sql .= ' AND i.due_date IS NOT NULL AND i.due_date < CURDATE()';
+            } elseif (str_starts_with($balanceFilter, 'aging_') && $balanceFilter !== 'aging_current') {
+                [$lo, $hi] = match ($balanceFilter) {
+                    'aging_d1_30'   => [1, 30],
+                    'aging_d31_60'  => [31, 60],
+                    'aging_d61_90'  => [61, 90],
+                    'aging_d90_plus' => [91, 100000],
+                    default => [0, 0],
+                };
+                $sql .= ' AND i.due_date IS NOT NULL AND DATEDIFF(CURDATE(), i.due_date) BETWEEN ? AND ?';
+                $params[] = $lo; $params[] = $hi;
+            } elseif ($balanceFilter === 'aging_current') {
+                $sql .= ' AND (i.due_date IS NULL OR i.due_date >= CURDATE())';
+            }
+            // 'outstanding' needs no extra clause beyond the balance>0 check above
         }
         if ($search !== '') {
             $sql .= ' AND (i.client_name LIKE ? OR i.invoice_no LIKE ?)';
@@ -61,6 +94,12 @@ class BillingController extends BaseController
             'statusFilter' => $statusFilter,
             'entityFilter' => $entityFilter,
             'search'       => $search,
+            'currencyFilter' => $currencyFilter,
+            'fromFilter'   => $fromFilter,
+            'toFilter'     => $toFilter,
+            'paidFromFilter' => $paidFromFilter,
+            'paidToFilter' => $paidToFilter,
+            'balanceFilter' => $balanceFilter,
             'pdfReady'     => invoice_pdf_engine_ready(),
         ]);
     }
