@@ -16,6 +16,7 @@ class TaskController extends BaseController
         $search   = trim($_GET['q'] ?? '');
         $statusF  = $_GET['status'] ?? 'all';
         $assigneeF = (int)($_GET['assignee'] ?? 0);
+        $caseIdF   = (int)($_GET['case_id'] ?? 0);
 
         $sql    = 'SELECT t.*,c.case_number,c.title AS case_title,u.full_name AS assignee_name,u.avatar_color AS assignee_color
                    FROM legalops_tasks t
@@ -29,6 +30,9 @@ class TaskController extends BaseController
             $params[] = $uid; $params[] = $uid;
         } elseif ($assigneeF > 0) {
             $sql .= ' AND t.assigned_to=?'; $params[] = $assigneeF;
+        }
+        if ($caseIdF > 0) {
+            $sql .= ' AND t.case_id = ?'; $params[] = $caseIdF;
         }
         if ($statusF === 'open') {
             $sql .= " AND t.status != 'done'";
@@ -48,6 +52,13 @@ class TaskController extends BaseController
         $team  = $adm ? $this->pdo->query("SELECT id,full_name,email FROM phpauth_users ORDER BY full_name")->fetchAll()
                       : [['id' => $uid, 'full_name' => $user['full_name'] ?? $user['email'], 'email' => $user['email']]];
 
+        $caseIdFilterLabel = null;
+        if ($caseIdF > 0) {
+            $stmt = $this->pdo->prepare('SELECT case_number, title FROM legalops_cases WHERE id = ?');
+            $stmt->execute([$caseIdF]);
+            if ($row = $stmt->fetch()) { $caseIdFilterLabel = $row['case_number'] . ' — ' . $row['title']; }
+        }
+
         $this->view('tasks/index', [
             'pageTitle'    => 'Tasks',
             'activeNav'    => 'tasks',
@@ -57,6 +68,8 @@ class TaskController extends BaseController
             'search'       => $search,
             'statusFilter' => $statusF,
             'assigneeFilter' => $assigneeF,
+            'caseIdFilter'   => $caseIdF,
+            'caseIdFilterLabel' => $caseIdFilterLabel,
         ]);
     }
 

@@ -85,6 +85,7 @@ class ClientController extends BaseController
     {
         $this->requireLogin();
         require_once dirname(__DIR__, 2) . '/libs/client_types.php';
+        require_once dirname(__DIR__, 2) . '/libs/Invoicing.php';
 
         $client  = $this->findClient((int)$params['id']);
         $meta    = client_type_meta($client['entity_type']);
@@ -108,6 +109,15 @@ class ClientController extends BaseController
         );
         $stmt->execute([$id]); $matters = $stmt->fetchAll();
 
+        // Invoices are matched by client_name (billing doesn't have a client_id
+        // link — see INVOICING.md), same as everywhere else in the billing module.
+        $stmt = $this->pdo->prepare(
+            "SELECT currency, COUNT(*) cnt, SUM(grand_total) total, SUM(grand_total - amount_paid) outstanding
+             FROM legalops_invoices WHERE client_name = ? AND status = 'issued' GROUP BY currency"
+        );
+        $stmt->execute([$client['display_name']]);
+        $billingSummary = $stmt->fetchAll();
+
         $this->view('clients/show', [
             'pageTitle'     => $client['display_name'],
             'activeNav'     => 'clients',
@@ -118,6 +128,7 @@ class ClientController extends BaseController
             'contacts'      => $contacts,
             'documents'     => $documents,
             'matters'       => $matters,
+            'billingSummary' => $billingSummary,
             'allLeaders'    => array_merge($activeLeaders, $pastLeaders),
             'docTypes'      => client_doc_types(),
         ]);

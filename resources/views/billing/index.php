@@ -169,6 +169,7 @@ if ($balanceFilter !== '' && isset($balanceLabels[$balanceFilter])) $drillParts[
 if ($currencyFilter !== '') $drillParts[] = $currencyFilter;
 if ($fromFilter !== '' || $toFilter !== '') $drillParts[] = 'invoiced ' . ($fromFilter ? date('d M Y', strtotime($fromFilter)) : '…') . ' – ' . ($toFilter ? date('d M Y', strtotime($toFilter . ' -1 day')) : '…');
 if ($paidFromFilter !== '' || $paidToFilter !== '') $drillParts[] = 'paid ' . ($paidFromFilter ? date('d M Y', strtotime($paidFromFilter)) : '…') . ' – ' . ($paidToFilter ? date('d M Y', strtotime($paidToFilter . ' -1 day')) : '…');
+if ($caseIdFilter > 0 && $caseIdFilterLabel) $drillParts[] = 'matter: ' . $caseIdFilterLabel;
 ?>
 <?php if ($drillParts): ?>
   <div class="alert alert-info" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -205,7 +206,10 @@ if ($paidFromFilter !== '' || $paidToFilter !== '') $drillParts[] = 'paid ' . ($
       ?>
         <tr>
           <td><span class="mono"><?= htmlspecialchars($inv['invoice_no']) ?></span></td>
-          <td class="case-client"><?= htmlspecialchars($inv['client_name']) ?></td>
+          <td class="case-client">
+            <?= htmlspecialchars($inv['client_name']) ?>
+            <?php if ($inv['case_number']): ?><br><a class="link" style="font-size:11.5px" href="<?= url('cases/' . (int)$inv['case_id']) ?>"><?= htmlspecialchars($inv['case_number']) ?></a><?php endif; ?>
+          </td>
           <td class="case-client"><?= htmlspecialchars($inv['entity_name']) ?></td>
           <td class="case-client"><?= date('d M Y', strtotime($inv['invoice_date'])) ?></td>
           <td class="mono"><?= htmlspecialchars(format_money((float)$inv['grand_total'], $inv['currency'])) ?></td>

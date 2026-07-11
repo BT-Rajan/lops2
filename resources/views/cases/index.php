@@ -178,6 +178,7 @@ $caseDrillParts = [];
 if ($practiceAreaFilter !== '') $caseDrillParts[] = $practiceAreaFilter;
 if ($openedMonthFilter !== '') $caseDrillParts[] = 'opened ' . date('F Y', strtotime($openedMonthFilter . '-01'));
 if ($closedMonthFilter !== '') $caseDrillParts[] = 'closed ' . date('F Y', strtotime($closedMonthFilter . '-01'));
+if ($clientIdFilter > 0 && $clientIdFilterName) $caseDrillParts[] = 'client: ' . $clientIdFilterName;
 ?>
 <?php if ($caseDrillParts): ?>
   <div class="alert alert-info" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">

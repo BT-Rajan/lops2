@@ -125,7 +125,7 @@
 
     <!-- Matters -->
     <div class="card card-pad">
-      <div class="card-head"><h3>Matters</h3><a class="link" href="<?= url('cases') ?>">All matters →</a></div>
+      <div class="card-head"><h3>Matters</h3><a class="link" href="<?= url('cases?client_id=' . (int)$client['id']) ?>">All matters →</a></div>
       <?php if ($matters): ?>
         <table class="table">
           <thead><tr><th>Matter</th><th>Status</th><th>Docs</th></tr></thead>
@@ -148,6 +148,27 @@
         </table>
       <?php else: ?>
         <div class="empty-state"><p>No matters linked to this client yet.</p></div>
+      <?php endif; ?>
+    </div>
+
+    <!-- Billing -->
+    <div class="card card-pad">
+      <div class="card-head"><h3>Billing</h3><a class="link" href="<?= url('billing?q=' . urlencode($client['display_name'])) ?>">View invoices →</a></div>
+      <?php if ($billingSummary): ?>
+        <table class="table">
+          <thead><tr><th>Currency</th><th>Invoiced</th><th>Outstanding</th></tr></thead>
+          <tbody>
+            <?php foreach ($billingSummary as $b): ?>
+              <tr>
+                <td class="mono" style="font-weight:700"><?= htmlspecialchars($b['currency']) ?></td>
+                <td class="mono"><?= htmlspecialchars(format_money((float)$b['total'], $b['currency'])) ?> <span class="case-client">(<?= (int)$b['cnt'] ?>)</span></td>
+                <td class="mono" style="<?= (float)$b['outstanding'] > 0.01 ? 'color:var(--danger)' : '' ?>"><?= htmlspecialchars(format_money((float)$b['outstanding'], $b['currency'])) ?></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php else: ?>
+        <div class="empty-state"><p>No issued invoices for this client yet.</p></div>
       <?php endif; ?>
     </div>
 

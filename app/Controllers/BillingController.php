@@ -29,9 +29,11 @@ class BillingController extends BaseController
         $paidFromFilter = trim($_GET['paid_from'] ?? '');
         $paidToFilter   = trim($_GET['paid_to'] ?? '');
         $balanceFilter  = trim($_GET['balance'] ?? ''); // outstanding | overdue | aging_current | aging_1_30 | aging_31_60 | aging_61_90 | aging_90_plus
+        $caseIdFilter   = (int)($_GET['case_id'] ?? 0);
 
-        $sql = 'SELECT i.*, e.name AS entity_name FROM legalops_invoices i
-                JOIN legalops_billing_entities e ON e.id = i.billing_entity_id WHERE 1=1';
+        $sql = 'SELECT i.*, e.name AS entity_name, c.case_number, c.title AS case_title FROM legalops_invoices i
+                JOIN legalops_billing_entities e ON e.id = i.billing_entity_id
+                LEFT JOIN legalops_cases c ON c.id = i.case_id WHERE 1=1';
         $params = [];
         if (in_array($statusFilter, ['draft', 'issued', 'void'], true)) {
             $sql .= ' AND i.status = ?';
@@ -44,6 +46,10 @@ class BillingController extends BaseController
         if ($currencyFilter !== '') {
             $sql .= ' AND i.currency = ?';
             $params[] = $currencyFilter;
+        }
+        if ($caseIdFilter > 0) {
+            $sql .= ' AND i.case_id = ?';
+            $params[] = $caseIdFilter;
         }
         if ($fromFilter !== '') { $sql .= ' AND i.invoice_date >= ?'; $params[] = $fromFilter; }
         if ($toFilter !== '')   { $sql .= ' AND i.invoice_date < ?';  $params[] = $toFilter; }
@@ -84,6 +90,13 @@ class BillingController extends BaseController
             'SELECT id, case_number, title, client_name FROM legalops_cases ORDER BY created_at DESC'
         )->fetchAll();
 
+        $caseIdFilterLabel = null;
+        if ($caseIdFilter > 0) {
+            $stmt = $this->pdo->prepare('SELECT case_number, title FROM legalops_cases WHERE id = ?');
+            $stmt->execute([$caseIdFilter]);
+            if ($row = $stmt->fetch()) { $caseIdFilterLabel = $row['case_number'] . ' — ' . $row['title']; }
+        }
+
         $this->view('billing/index', [
             'pageTitle'    => 'Billing',
             'activeNav'    => 'billing',
@@ -100,6 +113,8 @@ class BillingController extends BaseController
             'paidFromFilter' => $paidFromFilter,
             'paidToFilter' => $paidToFilter,
             'balanceFilter' => $balanceFilter,
+            'caseIdFilter'  => $caseIdFilter,
+            'caseIdFilterLabel' => $caseIdFilterLabel,
             'pdfReady'     => invoice_pdf_engine_ready(),
         ]);
     }

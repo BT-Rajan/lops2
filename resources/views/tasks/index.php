@@ -7,6 +7,13 @@
   <button class="btn btn-primary" type="button" id="task-toggle-btn"><?= icon('plus') ?> New task</button>
 </div>
 
+<?php if ($caseIdFilter > 0 && $caseIdFilterLabel): ?>
+  <div class="alert alert-info" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span>Showing tasks for: <strong><?= htmlspecialchars($caseIdFilterLabel) ?></strong></span>
+    <a class="link" href="<?= url('tasks') ?>">Clear filter ×</a>
+  </div>
+<?php endif; ?>
+
 <!-- Inline add/edit panel -->
 <div class="card inline-panel" id="task-panel">
   <form method="post" action="<?= url('tasks') ?>" id="task-form">
@@ -84,7 +91,7 @@
           <?php if ($t['source'] === 'hearing_cron'): ?><span class="badge badge-pending" style="margin-top:4px"><?= icon('flag') ?> Hearing</span><?php endif; ?>
           <?php if ($t['status'] === 'hold' && $t['hold_reason']): ?><div class="case-client" style="color:var(--danger)">On hold: <?= htmlspecialchars($t['hold_reason']) ?></div><?php endif; ?>
         </td>
-        <td class="case-client"><?= $t['case_number'] ? htmlspecialchars($t['case_number']) : '—' ?></td>
+        <td class="case-client"><?= $t['case_number'] ? '<a class="link" href="' . url('cases/' . $t['case_id']) . '">' . htmlspecialchars($t['case_number']) . '</a>' : '—' ?></td>
         <td>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="avatar avatar-sm" style="background:<?= htmlspecialchars($t['assignee_color'] ?: '#3B6FE0') ?>"><?= htmlspecialchars(initials($t['assignee_name'] ?: '?')) ?></span>

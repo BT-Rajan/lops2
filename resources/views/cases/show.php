@@ -262,18 +262,34 @@ $hasIntel   = (bool)array_filter([
 
     <!-- Tasks -->
     <div class="card card-pad">
-      <div class="card-head"><h3>Linked tasks</h3><a class="link" href="<?= url('tasks') ?>">All tasks →</a></div>
+      <div class="card-head"><h3>Linked tasks</h3><a class="link" href="<?= url('tasks?case_id=' . (int)$case['id']) ?>">All tasks →</a></div>
       <?php if ($tasks): foreach ($tasks as $t): ?>
-        <div class="task-row <?= $t['status'] === 'done' ? 'done' : '' ?>">
+        <a href="<?= url('tasks?case_id=' . (int)$case['id']) ?>" class="task-row <?= $t['status'] === 'done' ? 'done' : '' ?>" style="text-decoration:none;color:inherit">
           <span class="task-check"><?= $t['status'] === 'done' ? icon('check') : '' ?></span>
           <div>
             <div class="task-title"><?= htmlspecialchars($t['title']) ?></div>
             <div class="task-meta"><?= htmlspecialchars($t['assignee_name'] ?? 'Unassigned') ?> · <?= fmt_date($t['due_on'], 'd M') ?></div>
           </div>
           <span class="badge badge-<?= $t['priority'] ?>" style="margin-left:auto"><?= $t['priority'] ?></span>
-        </div>
+        </a>
       <?php endforeach; else: ?>
         <div class="empty-state"><p>No tasks linked to this matter.</p></div>
+      <?php endif; ?>
+    </div>
+
+    <!-- Invoices -->
+    <div class="card card-pad">
+      <div class="card-head"><h3>Invoices</h3><a class="link" href="<?= url('billing?case_id=' . (int)$case['id']) ?>">All invoices →</a></div>
+      <?php if ($invoices): foreach ($invoices as $inv): ?>
+        <a href="<?= url('billing?case_id=' . (int)$case['id']) ?>" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-card);text-decoration:none;color:inherit">
+          <div style="flex:1;min-width:0">
+            <div class="mono" style="font-weight:600"><?= htmlspecialchars($inv['invoice_no']) ?></div>
+            <div class="case-client"><?= htmlspecialchars(format_money((float)$inv['grand_total'], $inv['currency'])) ?><?php if ($inv['status'] === 'issued' && (float)$inv['grand_total'] - (float)$inv['amount_paid'] > 0.01): ?> · <span style="color:var(--danger)">outstanding</span><?php endif; ?></div>
+          </div>
+          <span class="badge badge-<?= htmlspecialchars($inv['status']) ?>"><?= htmlspecialchars(ucfirst($inv['status'])) ?></span>
+        </a>
+      <?php endforeach; else: ?>
+        <div class="empty-state"><p>No invoices for this matter yet.</p></div>
       <?php endif; ?>
     </div>
 

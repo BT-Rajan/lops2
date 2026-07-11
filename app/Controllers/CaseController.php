@@ -24,6 +24,7 @@ class CaseController extends BaseController
         $practiceAreaFilter = trim($_GET['practice_area'] ?? '');
         $openedMonthFilter  = trim($_GET['opened_month'] ?? ''); // YYYY-MM
         $closedMonthFilter  = trim($_GET['closed_month'] ?? ''); // YYYY-MM
+        $clientIdFilter     = (int)($_GET['client_id'] ?? 0);
 
         $sql    = 'SELECT c.*, (SELECT COUNT(*) FROM legalops_case_documents WHERE case_id=c.id) AS doc_count FROM legalops_cases c WHERE 1=1';
         $params = [];
@@ -32,6 +33,9 @@ class CaseController extends BaseController
         }
         if ($practiceAreaFilter !== '') {
             $sql .= ' AND c.practice_area = ?'; $params[] = $practiceAreaFilter;
+        }
+        if ($clientIdFilter > 0) {
+            $sql .= ' AND c.client_id = ?'; $params[] = $clientIdFilter;
         }
         if (preg_match('/^\d{4}-\d{2}$/', $openedMonthFilter)) {
             $sql .= ' AND DATE_FORMAT(c.opened_on, "%Y-%m") = ?'; $params[] = $openedMonthFilter;
@@ -50,6 +54,13 @@ class CaseController extends BaseController
 
         $clients = $this->pdo->query('SELECT id, display_name, entity_type FROM legalops_clients ORDER BY display_name')->fetchAll();
 
+        $clientIdFilterName = null;
+        if ($clientIdFilter > 0) {
+            $stmt = $this->pdo->prepare('SELECT display_name FROM legalops_clients WHERE id = ?');
+            $stmt->execute([$clientIdFilter]);
+            $clientIdFilterName = $stmt->fetchColumn() ?: null;
+        }
+
         $this->view('cases/index', [
             'pageTitle'     => 'Cases',
             'activeNav'     => 'cases',
@@ -60,6 +71,8 @@ class CaseController extends BaseController
             'practiceAreaFilter' => $practiceAreaFilter,
             'openedMonthFilter'  => $openedMonthFilter,
             'closedMonthFilter'  => $closedMonthFilter,
+            'clientIdFilter'     => $clientIdFilter,
+            'clientIdFilterName' => $clientIdFilterName,
         ]);
     }
 
@@ -120,6 +133,13 @@ class CaseController extends BaseController
         }
         $clients = $this->pdo->query('SELECT id, display_name FROM legalops_clients ORDER BY display_name')->fetchAll();
 
+        require_once dirname(__DIR__, 2) . '/libs/Invoicing.php';
+        $invoices = $this->pdo->prepare(
+            "SELECT id, invoice_no, status, currency, grand_total, amount_paid FROM legalops_invoices WHERE case_id = ? ORDER BY created_at DESC"
+        );
+        $invoices->execute([$case['id']]);
+        $invoices = $invoices->fetchAll();
+
         $this->view('cases/show', [
             'pageTitle' => $case['case_number'] . ' — ' . $case['title'],
             'activeNav' => 'cases',
@@ -128,6 +148,7 @@ class CaseController extends BaseController
             'clients'   => $clients,
             'docs'      => $docs,
             'tasks'     => $tasks,
+            'invoices'  => $invoices,
             'activity'  => $activity,
             'team'      => $team,
             'connected' => $links['connected'],
